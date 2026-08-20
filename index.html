@@ -3,7 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Chahitya Enterprise — Fleet Ops Wireframe v0.5</title>
+<title>Chahitya Enterprise — Fleet Ops</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <style>
   :root {
     color-scheme: light;
@@ -335,18 +336,141 @@
   }
   .owner-badge.driver-owned { background: rgba(42,120,214,0.12); color: var(--series-1); }
   .owner-badge.third-party { background: rgba(235,104,52,0.14); color: var(--series-2); }
+
+  /* ===== Login screen ===== */
+  .login-screen {
+    position: fixed; inset: 0; z-index: 100; display: flex; align-items: center; justify-content: center;
+    background: linear-gradient(160deg, var(--sidebar-bg), var(--sidebar-bg-2));
+  }
+  .login-card {
+    width: 100%; max-width: 360px; background: var(--surface-1); border-radius: var(--radius-lg);
+    padding: 30px 28px; box-shadow: 0 24px 60px rgba(0,0,0,0.35);
+  }
+  .login-brand { display: flex; align-items: center; gap: 10px; margin-bottom: 22px; }
+  .login-title { font-size: 17px; font-weight: 700; margin: 0 0 4px; }
+  .login-sub { font-size: 12.5px; color: var(--text-muted); margin: 0 0 20px; line-height: 1.5; }
+  .login-field { margin-bottom: 14px; }
+  .login-field label { display: block; font-size: 11.5px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px; }
+  .login-field input {
+    width: 100%; font: inherit; font-size: 13.5px; padding: 10px 12px;
+    border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--page-plane);
+  }
+  .login-field input:focus { outline: 2px solid var(--series-1); outline-offset: -1px; background: var(--surface-1); }
+  .login-error {
+    display: none; font-size: 12px; color: var(--status-critical); background: rgba(208,59,59,0.08);
+    border-radius: var(--radius-sm); padding: 8px 10px; margin-bottom: 14px; line-height: 1.4;
+  }
+  .login-error.show { display: block; }
+  .btn-primary.full { width: 100%; padding: 10px 14px; font-size: 13px; }
+  .btn-primary[disabled] { opacity: 0.6; cursor: default; box-shadow: none; transform: none; }
+  .login-foot { font-size: 11px; color: var(--text-muted); margin-top: 16px; line-height: 1.5; text-align: center; }
+
+  /* ===== Topbar user info ===== */
+  .user-chip { display: flex; align-items: center; gap: 10px; }
+  .user-chip .who { text-align: right; }
+  .user-chip .name { font-size: 12.5px; font-weight: 700; }
+  .user-chip .role-badge {
+    font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em;
+    padding: 2px 7px; border-radius: 999px; margin-top: 2px; display: inline-block;
+  }
+  .user-chip .role-badge.boss { background: rgba(42,120,214,0.12); color: var(--series-1); }
+  .user-chip .role-badge.manager { background: rgba(27,175,122,0.14); color: #0d7a53; }
+  .avatar-circle {
+    width: 32px; height: 32px; border-radius: 999px; background: var(--page-plane); border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: var(--text-secondary);
+  }
+  .btn-ghost-sm {
+    font: inherit; font-size: 11.5px; font-weight: 600; padding: 6px 11px; cursor: pointer;
+    border-radius: 999px; border: 1px solid var(--border); background: var(--surface-1); color: var(--text-secondary);
+  }
+  .btn-ghost-sm:hover { border-color: var(--text-muted); color: var(--text-primary); }
+
+  /* ===== Settings screen: storage + compression ===== */
+  .storage-bar-track { background: var(--gridline); border-radius: 6px; height: 14px; overflow: hidden; margin: 10px 0 6px; }
+  .storage-bar-fill { height: 100%; border-radius: 6px; background: linear-gradient(90deg, var(--series-1), #4a92e3); transition: width 0.3s ease; }
+  .storage-bar-fill.warn { background: linear-gradient(90deg, var(--status-warning), #f6c669); }
+  .storage-bar-fill.crit { background: linear-gradient(90deg, var(--status-critical), #e37373); }
+  .storage-readout { display: flex; justify-content: space-between; font-size: 12px; color: var(--text-muted); }
+  .compress-banner {
+    display: flex; align-items: center; gap: 10px; font-size: 12.5px;
+    background: #eaf7ec; color: #14602f; border: 1px solid #cdeed3;
+    border-radius: var(--radius-sm); padding: 10px 12px; margin-top: 14px; line-height: 1.5;
+  }
+  .compress-banner.stale { background: #f4f4f2; color: var(--text-secondary); border-color: var(--border); }
+  .compress-banner .ic { flex-shrink: 0; }
+  .settings-row { display: flex; align-items: center; justify-content: space-between; gap: 14px; }
+  .kebab-btn {
+    appearance: none; border: 1px solid var(--border); background: var(--surface-1); border-radius: var(--radius-sm);
+    width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; cursor: pointer; position: relative;
+  }
+  .kebab-btn:hover { border-color: var(--text-muted); }
+  .kebab-menu {
+    display: none; position: absolute; right: 0; top: 36px; background: var(--surface-1); border: 1px solid var(--border);
+    border-radius: var(--radius-sm); box-shadow: var(--shadow-2); min-width: 190px; z-index: 20; overflow: hidden;
+  }
+  .kebab-menu.open { display: block; }
+  .kebab-menu button {
+    display: block; width: 100%; text-align: left; font: inherit; font-size: 12.5px; padding: 10px 12px;
+    border: none; background: none; cursor: pointer; color: var(--text-primary);
+  }
+  .kebab-menu button:hover { background: var(--page-plane); }
+  .kebab-menu button[disabled] { color: var(--text-muted); cursor: default; }
+
+  /* ===== Challan upload ===== */
+  .upload-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .upload-row input[type="file"] { font-size: 12px; }
+  .upload-row input[type="text"] {
+    font: inherit; font-size: 12.5px; padding: 8px 10px; border: 1px solid var(--border);
+    border-radius: var(--radius-sm); flex: 1; min-width: 160px;
+  }
+  .upload-status { font-size: 12px; margin-top: 10px; }
+  .upload-status.ok { color: var(--status-good); }
+  .upload-status.err { color: var(--status-critical); }
+  .challan-list { display: flex; flex-direction: column; gap: 8px; margin-top: 14px; }
+  .challan-row { display: flex; align-items: center; justify-content: space-between; font-size: 12px; padding: 8px 10px; background: var(--page-plane); border-radius: var(--radius-sm); }
+  .challan-row a { color: var(--series-1); font-weight: 600; text-decoration: none; }
+  .challan-row a:hover { text-decoration: underline; }
 </style>
 </head>
 <body>
 
+<!-- LOGIN SCREEN -->
+<div class="login-screen" id="loginScreen">
+  <div class="login-card">
+    <div class="login-brand">
+      <div class="brand-mark">CE</div>
+      <div>
+        <div class="brand-name" style="color:var(--text-primary);">Chahitya Enterprise</div>
+        <div class="brand-sub-small" style="color:var(--text-muted);">Fleet Ops</div>
+      </div>
+    </div>
+    <h1 class="login-title">Sign in</h1>
+    <p class="login-sub">Admin-issued accounts only. If you don't have a login yet, ask the owner to create one for you.</p>
+    <div class="login-error" id="loginError"></div>
+    <form id="loginForm">
+      <div class="login-field">
+        <label for="loginEmail">Email</label>
+        <input type="email" id="loginEmail" autocomplete="username" required>
+      </div>
+      <div class="login-field">
+        <label for="loginPassword">Password</label>
+        <input type="password" id="loginPassword" autocomplete="current-password" required>
+      </div>
+      <button type="submit" class="btn-primary full" id="loginSubmit">Sign in</button>
+    </form>
+    <div class="login-foot">Closed system — no public sign-up, no social login.</div>
+  </div>
+</div>
+
+<div class="app-shell-wrap" id="appShellWrap" style="display:none;">
 <div class="notice-stack">
   <div class="notice warn">
     <svg class="ic" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v4M12 17h.01M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"/></svg>
-    <span><strong>WIREFRAME — draft for discussion.</strong> All names, numbers and locations are placeholder mock data, not live figures.</span>
+    <span><strong>Fleet, trip and driver data below is still placeholder.</strong> Login, challan uploads, storage tracking and the compression job are live and real — the truck roster is mock until real site/truck/driver details are on file.</span>
   </div>
   <div class="notice info">
     <svg class="ic" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
-    <span>Only two logins exist: <strong>Boss</strong> (read-only, Dashboard + Reports) and <strong>Manager</strong> (data entry, Operations + Trip Log). No driver login. Use the switcher (top right) to preview each.</span>
+    <span>Only two account types exist: <strong>Boss</strong> (read-only, Dashboard + Reports + Settings) and <strong>Manager</strong> (data entry, Operations + Trip Log). No driver login. Accounts are created individually by the owner.</span>
   </div>
 </div>
 
@@ -382,9 +506,13 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 21V4l4-1 8 2 4-1v13l-4 1-8-2-4 1Z"/><path d="M8 3v14M16 5v14"/></svg>
         Roadmap
       </button>
+      <button class="tab-btn" data-screen="settings" data-roles="boss" data-title="Settings">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/></svg>
+        Settings
+      </button>
     </nav>
 
-    <div class="sidebar-footer">Draft v0.5 · 20 Aug 2026</div>
+    <div class="sidebar-footer">Chahitya Fleet Ops · live backend</div>
   </aside>
 
   <div class="main-wrap">
@@ -392,12 +520,13 @@
       <div class="topbar-title">
         <div id="topbarTitle">Fleet Overview</div>
       </div>
-      <div class="role-switch">
-        <span>Viewing as</span>
-        <div class="role-toggle">
-          <button class="role-btn active" data-role="boss">Boss</button>
-          <button class="role-btn" data-role="manager">Manager</button>
+      <div class="user-chip">
+        <div class="who">
+          <div class="name" id="userName">—</div>
+          <span class="role-badge boss" id="userRoleBadge">—</span>
         </div>
+        <div class="avatar-circle" id="userAvatar">—</div>
+        <button class="btn-ghost-sm" id="logoutBtn">Log out</button>
       </div>
     </header>
 
@@ -509,6 +638,20 @@
         </div>
 
         <div class="panel">
+          <div class="panel-title">Upload challan</div>
+          <div class="panel-sub">Snap a photo of the challan and upload it as-is — full size, no need to resize or compress it yourself. That's handled automatically in the background.</div>
+          <form id="challanForm">
+            <div class="upload-row">
+              <input type="file" id="challanFile" accept="image/*,.pdf" required>
+              <input type="text" id="challanNote" placeholder="Optional note (truck #, trip, etc.)">
+              <button type="submit" class="btn-primary" id="challanSubmit">Upload</button>
+            </div>
+          </form>
+          <div class="upload-status" id="challanStatus"></div>
+          <div class="challan-list" id="challanList"></div>
+        </div>
+
+        <div class="panel">
           <div class="panel-title">Fleet roster</div>
           <div class="panel-sub">The fleet isn't fixed at 19 — trucks get added when a new one joins (own or contracted) and retired when one leaves. Every screen in this system (Dashboard grid, Reports table, Trip Log) reads from this roster, so it grows or shrinks with one edit here, nothing rebuilt elsewhere.</div>
           <div style="display:flex; gap:12px; align-items:center;">
@@ -614,8 +757,48 @@
         </div>
       </section>
 
+      <!-- SETTINGS (Boss only) -->
+      <section class="screen" id="settings">
+        <h1 class="page-title">Settings</h1>
+        <p class="page-sub">Housekeeping for the system itself — nothing here needs regular attention.</p>
+
+        <div class="panel">
+          <div class="settings-row">
+            <div>
+              <div class="panel-title" style="margin-bottom:2px;">Challan photo storage</div>
+              <div class="panel-sub" style="margin-bottom:0;">Free tier gives 1 GB. Photos over 300 KB are compressed automatically every Sunday, in place — no action needed from you.</div>
+            </div>
+            <div class="kebab-wrap" style="position:relative;">
+              <button class="kebab-btn" id="settingsKebabBtn" title="More options">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="12" cy="5" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="12" cy="19" r="1.2"/></svg>
+              </button>
+              <div class="kebab-menu" id="settingsKebabMenu">
+                <button id="compressNowBtn">Compress now</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="storage-bar-track"><div class="storage-bar-fill" id="storageBarFill" style="width:0%;"></div></div>
+          <div class="storage-readout">
+            <span id="storageReadoutUsed">Loading…</span>
+            <span id="storageReadoutPct">—</span>
+          </div>
+
+          <div class="compress-banner stale" id="compressBanner">
+            <svg class="ic" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+            <span id="compressBannerText">Checking last compression run…</span>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-title">Accounts</div>
+          <div class="panel-sub" style="margin-bottom:0;">Boss and Manager logins are created individually by the owner in the Supabase dashboard — there's no add-user screen here by design, to keep this a closed system. Ask the owner if you need a new login or a password reset.</div>
+        </div>
+      </section>
+
     </main>
   </div>
+</div>
 </div>
 
 <!-- TRUCK / DRIVER DETAIL MODAL -->
@@ -814,14 +997,202 @@
       showScreen(firstVisible);
     }
   }
-  document.querySelectorAll('.role-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      document.querySelectorAll('.role-btn').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      applyRole(btn.dataset.role);
-    });
+</script>
+
+<!-- ===== Real backend: auth, settings data, challan upload ===== -->
+<script>
+  const SUPABASE_URL = "https://npzuefviowkdwdlnuhzu.supabase.co";
+  const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_A92D7a3cz7Xzjhcuti8Lvg_PFmq-ULe";
+  const COMPRESS_FN_URL = SUPABASE_URL + "/functions/v1/compress-challans";
+  // Triggers the compression job manually. Low-sensitivity by design — worst case
+  // someone runs an early compression pass, no data exposure. See project notes.
+  const CRON_TRIGGER_SECRET = "2102e813951f7e2e69f51dc1e337a72b16bf20ae4e40afe1";
+
+  const sb = supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+  let currentUser = null; // { id, email, name, role }
+
+  function showLogin() {
+    document.getElementById('loginScreen').style.display = 'flex';
+    document.getElementById('appShellWrap').style.display = 'none';
+  }
+  function showApp() {
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('appShellWrap').style.display = 'block';
+  }
+  function setLoginError(msg) {
+    const el = document.getElementById('loginError');
+    if (msg) { el.textContent = msg; el.classList.add('show'); }
+    else { el.textContent = ''; el.classList.remove('show'); }
+  }
+
+  async function loadCurrentUserProfile(authUser) {
+    const { data, error } = await sb.from('app_users').select('name, role, active').eq('id', authUser.id).single();
+    if (error || !data) {
+      return null;
+    }
+    return { id: authUser.id, email: authUser.email, name: data.name, role: data.role, active: data.active };
+  }
+
+  function renderUserChip() {
+    if (!currentUser) return;
+    document.getElementById('userName').textContent = currentUser.name || currentUser.email;
+    const badge = document.getElementById('userRoleBadge');
+    badge.textContent = currentUser.role === 'manager' ? 'Manager' : 'Boss';
+    badge.className = 'role-badge ' + (currentUser.role === 'manager' ? 'manager' : 'boss');
+    const initials = (currentUser.name || currentUser.email || '?').trim().split(/\s+/).map(s => s[0]).slice(0,2).join('').toUpperCase();
+    document.getElementById('userAvatar').textContent = initials;
+  }
+
+  async function initSession() {
+    const { data: { session } } = await sb.auth.getSession();
+    if (!session) { showLogin(); return; }
+    const profile = await loadCurrentUserProfile(session.user);
+    if (!profile || profile.active === false) {
+      await sb.auth.signOut();
+      setLoginError('This account is not set up or has been deactivated. Contact the owner.');
+      showLogin();
+      return;
+    }
+    currentUser = profile;
+    renderUserChip();
+    applyRole(currentUser.role);
+    showApp();
+    if (currentUser.role === 'boss') loadSettingsData();
+    if (currentUser.role === 'manager') loadChallanList();
+  }
+
+  document.getElementById('loginForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    setLoginError(null);
+    const submitBtn = document.getElementById('loginSubmit');
+    submitBtn.disabled = true; submitBtn.textContent = 'Signing in…';
+    const email = document.getElementById('loginEmail').value.trim();
+    const password = document.getElementById('loginPassword').value;
+    const { error } = await sb.auth.signInWithPassword({ email, password });
+    submitBtn.disabled = false; submitBtn.textContent = 'Sign in';
+    if (error) { setLoginError(error.message || 'Sign in failed. Check your email and password.'); return; }
+    await initSession();
   });
-  applyRole('boss');
+
+  document.getElementById('logoutBtn').addEventListener('click', async () => {
+    await sb.auth.signOut();
+    currentUser = null;
+    document.getElementById('loginEmail').value = '';
+    document.getElementById('loginPassword').value = '';
+    showLogin();
+  });
+
+  // ----- Settings screen: storage usage + compression banner -----
+  function fmtBytes(n) {
+    if (n == null) return '—';
+    if (n < 1024) return n + ' B';
+    if (n < 1024 * 1024) return (n / 1024).toFixed(1) + ' KB';
+    return (n / (1024 * 1024)).toFixed(1) + ' MB';
+  }
+  function fmtWhen(iso) {
+    if (!iso) return null;
+    const d = new Date(iso);
+    return d.toLocaleDateString(undefined, { day: 'numeric', month: 'short' }) + ' at ' +
+      d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+  }
+
+  async function loadSettingsData() {
+    const ONE_GB = 1024 * 1024 * 1024;
+    const { data: stats } = await sb.from('challans_storage_stats').select('bytes_used, file_count').single();
+    const used = stats ? Number(stats.bytes_used) : 0;
+    const pct = Math.min(100, (used / ONE_GB) * 100);
+    const fill = document.getElementById('storageBarFill');
+    fill.style.width = pct.toFixed(1) + '%';
+    fill.className = 'storage-bar-fill' + (pct > 90 ? ' crit' : pct > 70 ? ' warn' : '');
+    document.getElementById('storageReadoutUsed').textContent =
+      fmtBytes(used) + ' of 1 GB used' + (stats ? ' · ' + stats.file_count + ' files' : '');
+    document.getElementById('storageReadoutPct').textContent = pct.toFixed(1) + '%';
+
+    const { data: runs } = await sb.from('compression_runs').select('*').order('run_at', { ascending: false }).limit(1);
+    const banner = document.getElementById('compressBanner');
+    const text = document.getElementById('compressBannerText');
+    if (runs && runs.length) {
+      const r = runs[0];
+      banner.classList.remove('stale');
+      const freed = (r.bytes_before || 0) - (r.bytes_after || 0);
+      text.textContent = r.status === 'success'
+        ? `Last compression: ${fmtWhen(r.run_at)} — ${r.files_processed} file(s) processed, ${fmtBytes(Math.max(0, freed))} freed.`
+        : `Last compression run failed at ${fmtWhen(r.run_at)}: ${r.error_message || 'unknown error'}.`;
+    } else {
+      banner.classList.add('stale');
+      text.textContent = 'No compression run yet — the first one runs automatically this Sunday.';
+    }
+  }
+
+  document.getElementById('settingsKebabBtn').addEventListener('click', (e) => {
+    e.stopPropagation();
+    document.getElementById('settingsKebabMenu').classList.toggle('open');
+  });
+  document.addEventListener('click', () => document.getElementById('settingsKebabMenu').classList.remove('open'));
+
+  document.getElementById('compressNowBtn').addEventListener('click', async (e) => {
+    e.stopPropagation();
+    const btn = e.target;
+    const orig = btn.textContent;
+    btn.disabled = true; btn.textContent = 'Compressing…';
+    try {
+      await fetch(COMPRESS_FN_URL, { method: 'POST', headers: { 'x-cron-secret': CRON_TRIGGER_SECRET } });
+      await loadSettingsData();
+    } catch (err) {
+      // silent — banner will just show the last known state
+    }
+    btn.disabled = false; btn.textContent = orig;
+    document.getElementById('settingsKebabMenu').classList.remove('open');
+  });
+
+  // ----- Challan upload (Manager) -----
+  async function loadChallanList() {
+    const list = document.getElementById('challanList');
+    if (!list) return;
+    const { data } = await sb.from('challans').select('id, file_path, uploaded_at').order('uploaded_at', { ascending: false }).limit(5);
+    if (!data || !data.length) { list.innerHTML = ''; return; }
+    list.innerHTML = data.map(c =>
+      `<div class="challan-row"><span>${fmtWhen(c.uploaded_at)}</span><span>${c.file_path.split('/').pop()}</span></div>`
+    ).join('');
+  }
+
+  const challanForm = document.getElementById('challanForm');
+  if (challanForm) {
+    challanForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const fileInput = document.getElementById('challanFile');
+      const note = document.getElementById('challanNote').value.trim();
+      const statusEl = document.getElementById('challanStatus');
+      const submitBtn = document.getElementById('challanSubmit');
+      const file = fileInput.files[0];
+      if (!file || !currentUser) return;
+      submitBtn.disabled = true; submitBtn.textContent = 'Uploading…';
+      statusEl.textContent = ''; statusEl.className = 'upload-status';
+      const path = currentUser.id + '/' + Date.now() + '-' + file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+      const { error: upErr } = await sb.storage.from('challans').upload(path, file, { upsert: false });
+      if (upErr) {
+        statusEl.textContent = 'Upload failed: ' + upErr.message;
+        statusEl.className = 'upload-status err';
+        submitBtn.disabled = false; submitBtn.textContent = 'Upload';
+        return;
+      }
+      const { error: insErr } = await sb.from('challans').insert({
+        file_path: path, uploaded_by: currentUser.id
+      });
+      submitBtn.disabled = false; submitBtn.textContent = 'Upload';
+      if (insErr) {
+        statusEl.textContent = 'Saved the photo, but couldn\'t record it: ' + insErr.message;
+        statusEl.className = 'upload-status err';
+        return;
+      }
+      statusEl.textContent = 'Challan uploaded' + (note ? ' — ' + note : '') + '.';
+      statusEl.className = 'upload-status ok';
+      challanForm.reset();
+      loadChallanList();
+    });
+  }
+
+  initSession();
 </script>
 
 </body>
