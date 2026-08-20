@@ -1,0 +1,828 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chahitya Enterprise — Fleet Ops Wireframe v0.5</title>
+<style>
+  :root {
+    color-scheme: light;
+    --surface-1:      #ffffff;
+    --page-plane:     #f4f4f2;
+    --sidebar-bg:     #14151a;
+    --sidebar-bg-2:   #1b1c22;
+    --text-primary:   #0b0b0b;
+    --text-secondary: #52514e;
+    --text-muted:     #898781;
+    --gridline:       #eae9e4;
+    --baseline:       #c3c2b7;
+    --border:         rgba(11,11,11,0.08);
+
+    --series-1: #2a78d6; /* blue */
+    --series-2: #eb6834; /* orange */
+    --series-3: #1baf7a; /* aqua */
+    --series-4: #eda100; /* yellow */
+
+    --status-good: #0ca30c;
+    --status-warning: #fab219;
+    --status-serious: #ec835a;
+    --status-critical: #d03b3b;
+
+    --radius-lg: 16px;
+    --radius-md: 12px;
+    --radius-sm: 8px;
+    --shadow-1: 0 1px 2px rgba(11,11,11,0.05), 0 1px 3px rgba(11,11,11,0.06);
+    --shadow-2: 0 8px 24px rgba(11,11,11,0.10), 0 2px 6px rgba(11,11,11,0.06);
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    background: var(--page-plane);
+    color: var(--text-primary);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ===== Top notice strip ===== */
+  .notice-stack { position: sticky; top: 0; z-index: 40; }
+  .notice {
+    display: flex; align-items: center; gap: 10px;
+    font-size: 12.5px; padding: 9px 24px;
+  }
+  .notice .ic { flex-shrink: 0; opacity: 0.85; }
+  .notice.warn { background: #fdf6e3; color: #7a5c00; border-bottom: 1px solid #f1e2ab; }
+  .notice.info { background: #eaf2fc; color: #17436f; border-bottom: 1px solid #cfe0f5; }
+  .notice strong { font-weight: 700; }
+
+  /* ===== Shell layout ===== */
+  .app-shell { display: flex; min-height: 100vh; align-items: stretch; }
+
+  .sidebar {
+    width: 248px; flex-shrink: 0;
+    background: linear-gradient(180deg, var(--sidebar-bg), var(--sidebar-bg-2));
+    color: #e8e7e3;
+    display: flex; flex-direction: column;
+    padding: 20px 14px;
+    position: sticky; top: 0; height: 100vh;
+  }
+  .sidebar-brand { display: flex; align-items: center; gap: 10px; padding: 0 8px 6px; }
+  .brand-mark {
+    width: 36px; height: 36px; border-radius: 10px; flex-shrink: 0;
+    background: linear-gradient(135deg, var(--series-1), #1d5eb0);
+    display: flex; align-items: center; justify-content: center;
+    color: white; font-weight: 700; font-size: 14px;
+    box-shadow: 0 4px 10px rgba(42,120,214,0.35);
+  }
+  .brand-name { font-weight: 700; font-size: 14px; color: #fff; line-height: 1.25; }
+  .brand-sub-small { font-size: 11px; color: #9a9a94; margin-top: 1px; }
+
+  .fleet-tag {
+    margin: 14px 8px 18px; padding: 8px 10px;
+    background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08);
+    border-radius: var(--radius-sm); font-size: 11px; color: #c7c6c0; line-height: 1.4;
+  }
+
+  .side-nav { display: flex; flex-direction: column; gap: 2px; flex: 1; }
+  .side-nav-label {
+    font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em;
+    color: #6f6f6a; padding: 10px 10px 6px;
+  }
+  .tab-btn {
+    display: flex; align-items: center; gap: 10px;
+    appearance: none; border: none; background: none; text-align: left;
+    font: inherit; font-size: 13px; font-weight: 500; color: #c7c6c0;
+    padding: 9px 10px; border-radius: var(--radius-sm); cursor: pointer;
+    width: 100%;
+  }
+  .tab-btn svg { width: 17px; height: 17px; flex-shrink: 0; opacity: 0.85; }
+  .tab-btn:hover { background: rgba(255,255,255,0.06); color: #fff; }
+  .tab-btn.active {
+    background: rgba(42,120,214,0.18); color: #fff;
+    box-shadow: inset 2px 0 0 var(--series-1);
+  }
+  .tab-btn.active svg { opacity: 1; color: #6fa8ec; }
+
+  .sidebar-footer { font-size: 10.5px; color: #6f6f6a; padding: 10px 8px 0; border-top: 1px solid rgba(255,255,255,0.08); margin-top: 10px; }
+
+  .main-wrap { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+
+  .topbar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 28px; background: var(--surface-1); border-bottom: 1px solid var(--border);
+    position: sticky; top: 0; z-index: 10;
+  }
+  .topbar-title { font-size: 15px; font-weight: 700; }
+  .topbar-title .dim { font-weight: 400; color: var(--text-muted); font-size: 12.5px; margin-top: 1px; }
+
+  .role-switch { display: flex; align-items: center; gap: 8px; }
+  .role-switch > span { font-size: 11.5px; color: var(--text-muted); }
+  .role-toggle {
+    display: flex; background: var(--page-plane); border: 1px solid var(--border);
+    border-radius: 999px; padding: 3px; gap: 2px;
+  }
+  .role-btn {
+    appearance: none; border: none; background: none; font: inherit;
+    font-size: 12px; font-weight: 600; color: var(--text-secondary);
+    padding: 6px 14px; border-radius: 999px; cursor: pointer;
+  }
+  .role-btn.active { background: var(--surface-1); color: var(--series-1); box-shadow: var(--shadow-1); }
+
+  main { padding: 26px 28px 60px; max-width: 1220px; margin: 0 auto; width: 100%; }
+  .screen { display: none; }
+  .screen.active { display: block; animation: fadein 0.15s ease; }
+  @keyframes fadein { from { opacity: 0; transform: translateY(3px); } to { opacity: 1; transform: none; } }
+
+  h1.page-title { font-size: 21px; font-weight: 700; margin: 0 0 4px; letter-spacing: -0.01em; }
+  p.page-sub { font-size: 13.5px; color: var(--text-muted); margin: 0 0 22px; max-width: 74ch; line-height: 1.5; }
+
+  .stat-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+    margin-bottom: 24px;
+  }
+  .stat-tile {
+    background: var(--surface-1);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 16px 18px;
+    box-shadow: var(--shadow-1);
+    border-left: 3px solid var(--gridline);
+    transition: box-shadow 0.15s ease, transform 0.15s ease;
+  }
+  .stat-tile:hover { box-shadow: var(--shadow-2); transform: translateY(-1px); }
+  .stat-tile.accent-good { border-left-color: var(--status-good); }
+  .stat-tile.accent-critical { border-left-color: var(--status-critical); }
+  .stat-tile.accent-blue { border-left-color: var(--series-1); }
+  .stat-label { font-size: 11.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.03em; color: var(--text-muted); margin-bottom: 8px; }
+  .stat-value { font-size: 28px; font-weight: 700; line-height: 1; letter-spacing: -0.01em; }
+  .stat-value.good { color: var(--status-good); }
+  .stat-delta { font-size: 12px; margin-top: 8px; color: var(--text-secondary); }
+
+  .panel {
+    background: var(--surface-1);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 20px 22px;
+    margin-bottom: 20px;
+    box-shadow: var(--shadow-1);
+  }
+  .panel-title {
+    font-size: 14.5px;
+    font-weight: 700;
+    margin: 0 0 5px;
+    letter-spacing: -0.005em;
+  }
+  .panel-sub { font-size: 12.5px; color: var(--text-muted); margin: 0 0 16px; line-height: 1.5; }
+
+  .truck-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(152px, 1fr));
+    gap: 10px;
+  }
+  .truck-card {
+    cursor: pointer; background: var(--surface-1); text-align: left; font-family: inherit;
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--gridline);
+    border-radius: var(--radius-sm);
+    padding: 11px 12px;
+    font-size: 12.5px;
+    transition: box-shadow 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
+  }
+  .truck-card:hover { box-shadow: var(--shadow-2); transform: translateY(-1px); border-left-color: var(--series-1); }
+  .truck-card.st-working { border-left-color: var(--status-good); }
+  .truck-card.st-idle { border-left-color: var(--status-warning); }
+  .truck-card.st-flagged { border-left-color: var(--status-critical); }
+  .truck-card.st-off { border-left-color: var(--baseline); }
+  .truck-card .id { font-weight: 700; margin-bottom: 6px; font-size: 13px; }
+  .status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 999px;
+  }
+  .status-pill.working { background: rgba(12,163,12,0.12); color: var(--status-good); }
+  .status-pill.idle { background: rgba(250,178,25,0.18); color: #8a5c00; }
+  .status-pill.flagged { background: rgba(208,59,59,0.12); color: var(--status-critical); }
+  .status-pill.off { background: rgba(137,135,129,0.14); color: var(--text-muted); }
+  .status-dot { width: 6px; height: 6px; border-radius: 999px; background: currentColor; }
+  .truck-meta { color: var(--text-muted); margin-top: 6px; font-size: 11.5px; }
+
+  .site-bars { display: flex; flex-direction: column; gap: 10px; }
+  .site-bar-row { display: flex; align-items: center; gap: 10px; font-size: 12.5px; }
+  .site-bar-row .name { width: 130px; flex-shrink: 0; color: var(--text-secondary); font-weight: 500; }
+  .site-bar-track { flex: 1; background: var(--gridline); border-radius: 5px; height: 10px; overflow: hidden; }
+  .site-bar-fill { height: 100%; border-radius: 5px; background: linear-gradient(90deg, var(--series-1), #4a92e3); }
+  .site-bar-row .count { width: 46px; text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; color: var(--text-primary); }
+
+  table.data-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  table.data-table th {
+    text-align: left; font-weight: 700; color: var(--text-muted);
+    font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.03em;
+    padding: 9px 10px; border-bottom: 1px solid var(--gridline);
+  }
+  table.data-table td {
+    padding: 11px 10px; border-bottom: 1px solid var(--gridline);
+    color: var(--text-primary); vertical-align: middle;
+  }
+  table.data-table tr:last-child td { border-bottom: none; }
+  table.data-table tbody tr { transition: background 0.1s ease; }
+  table.data-table tbody tr:hover { background: var(--page-plane); }
+  .num { font-variant-numeric: tabular-nums; }
+
+  select.mock-select {
+    font: inherit; font-size: 12px; padding: 6px 9px;
+    border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface-1);
+    color: var(--text-primary);
+  }
+  .toggle-btn {
+    font-size: 11.5px; font-weight: 600; padding: 5px 11px;
+    border-radius: 999px; border: 1px solid var(--border);
+    background: white; cursor: default; display: inline-block;
+  }
+  .toggle-btn.on { background: rgba(12,163,12,0.10); color: var(--status-good); border-color: transparent; }
+  .toggle-btn.off { background: rgba(208,59,59,0.10); color: var(--status-critical); border-color: transparent; }
+  .btn-primary {
+    font: inherit; font-size: 12px; font-weight: 700; padding: 7px 14px;
+    border-radius: 999px; border: none; cursor: pointer;
+    background: linear-gradient(135deg, var(--series-1), #1d5eb0); color: #fff;
+    box-shadow: 0 2px 6px rgba(42,120,214,0.35);
+    transition: box-shadow 0.15s ease, transform 0.1s ease;
+  }
+  .btn-primary:hover { box-shadow: 0 4px 12px rgba(42,120,214,0.45); transform: translateY(-1px); }
+
+  .annot {
+    font-size: 11.5px; color: var(--text-muted); margin-top: 10px;
+    border-top: 1px dashed var(--gridline); padding-top: 10px; line-height: 1.5;
+  }
+  .two-col { display: grid; grid-template-columns: 1.4fr 1fr; gap: 20px; align-items: start; }
+  @media (max-width: 900px) { .two-col { grid-template-columns: 1fr; } .stat-row { grid-template-columns: repeat(2,1fr); } }
+
+  .tap-hint { font-size: 10.5px; color: var(--series-1); margin-top: 6px; font-weight: 600; }
+  .truck-link {
+    appearance: none; border: none; background: none; font: inherit; padding: 0;
+    color: var(--series-1); font-weight: 700; cursor: pointer; text-decoration: underline; text-decoration-color: transparent;
+  }
+  .truck-link:hover { text-decoration-color: var(--series-1); }
+
+  /* Filter pills (Reports) */
+  .filter-row { display: flex; gap: 6px; margin-bottom: 18px; }
+  .filter-pill {
+    font-size: 12px; font-weight: 600; padding: 7px 14px; border-radius: 999px;
+    border: 1px solid var(--border); background: white; color: var(--text-secondary); cursor: pointer;
+    transition: all 0.12s ease;
+  }
+  .filter-pill.active { background: var(--series-1); color: white; border-color: var(--series-1); box-shadow: 0 2px 6px rgba(42,120,214,0.3); }
+  .filter-pill:not(.active):hover { border-color: var(--series-1); color: var(--series-1); }
+
+  /* Truck / driver detail modal */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0; background: rgba(11,11,11,0.45);
+    backdrop-filter: blur(2px);
+    align-items: center; justify-content: center; z-index: 50; padding: 20px;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal-card {
+    background: var(--surface-1); border-radius: var(--radius-lg); width: 100%; max-width: 480px;
+    max-height: 88vh; overflow-y: auto; box-shadow: 0 24px 60px rgba(0,0,0,0.3);
+  }
+  .modal-head {
+    display: flex; align-items: flex-start; justify-content: space-between;
+    padding: 20px 22px; border-bottom: 1px solid var(--gridline);
+    background: linear-gradient(180deg, #fbfbfa, transparent);
+  }
+  .modal-head .veh-icon {
+    width: 40px; height: 40px; border-radius: 10px; margin-right: 12px; flex-shrink: 0;
+    background: linear-gradient(135deg, var(--series-1), #1d5eb0);
+    color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px;
+  }
+  .modal-head-inner { display: flex; align-items: center; }
+  .modal-head .veh-num { font-size: 17px; font-weight: 700; }
+  .modal-head .veh-sub { font-size: 12px; color: var(--text-muted); margin-top: 3px; }
+  .modal-close {
+    appearance: none; border: none; background: var(--gridline); color: var(--text-secondary);
+    width: 28px; height: 28px; border-radius: 999px; cursor: pointer; font-size: 14px; line-height: 1;
+    flex-shrink: 0;
+  }
+  .modal-close:hover { background: #ddd; }
+  .modal-body { padding: 20px 22px; }
+  .modal-section { margin-bottom: 20px; }
+  .modal-section:last-child { margin-bottom: 0; }
+  .modal-section-title {
+    font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;
+    color: var(--text-muted); margin-bottom: 10px;
+  }
+  .kv-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 14px; }
+  .kv-item .k { font-size: 11px; color: var(--text-muted); margin-bottom: 3px; }
+  .kv-item .v { font-size: 13.5px; font-weight: 600; }
+  .trip-summary-row { display: flex; gap: 10px; }
+  .trip-summary-cell {
+    flex: 1; background: var(--page-plane); border: 1px solid var(--border);
+    border-radius: var(--radius-sm); padding: 12px; text-align: center;
+  }
+  .trip-summary-cell .n { font-size: 20px; font-weight: 700; color: var(--series-1); }
+  .trip-summary-cell .l { font-size: 10.5px; color: var(--text-muted); margin-top: 3px; }
+  .history-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .history-table th { text-align: left; font-weight: 700; color: var(--text-muted); font-size: 10px; text-transform: uppercase; padding: 6px; border-bottom: 1px solid var(--gridline); }
+  .history-table td { padding: 7px 6px; border-bottom: 1px solid var(--gridline); }
+  .owner-badge {
+    display: inline-block; font-size: 10.5px; font-weight: 700; padding: 3px 9px;
+    border-radius: 999px; margin-left: 6px;
+  }
+  .owner-badge.driver-owned { background: rgba(42,120,214,0.12); color: var(--series-1); }
+  .owner-badge.third-party { background: rgba(235,104,52,0.14); color: var(--series-2); }
+</style>
+</head>
+<body>
+
+<div class="notice-stack">
+  <div class="notice warn">
+    <svg class="ic" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v4M12 17h.01M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"/></svg>
+    <span><strong>WIREFRAME — draft for discussion.</strong> All names, numbers and locations are placeholder mock data, not live figures.</span>
+  </div>
+  <div class="notice info">
+    <svg class="ic" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+    <span>Only two logins exist: <strong>Boss</strong> (read-only, Dashboard + Reports) and <strong>Manager</strong> (data entry, Operations + Trip Log). No driver login. Use the switcher (top right) to preview each.</span>
+  </div>
+</div>
+
+<div class="app-shell">
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <div class="brand-mark">CE</div>
+      <div>
+        <div class="brand-name">Chahitya Enterprise</div>
+        <div class="brand-sub-small">Fleet Ops</div>
+      </div>
+    </div>
+    <div class="fleet-tag">Slurry disposal fleet · 19 tankers today<br><span style="color:#8f8f89;">(fleet size is adjustable, not fixed)</span></div>
+
+    <nav class="side-nav">
+      <button class="tab-btn active" data-screen="dashboard" data-roles="boss" data-title="Fleet Overview">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+        Boss Dashboard
+      </button>
+      <button class="tab-btn" data-screen="operations" data-roles="manager" data-title="Manager Operations">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+        Manager Operations
+      </button>
+      <button class="tab-btn" data-screen="triplog" data-roles="boss,manager" data-title="Trip Log">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>
+        Trip Log
+      </button>
+      <button class="tab-btn" data-screen="reports" data-roles="boss" data-title="Reports">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><rect x="7" y="12" width="3" height="6"/><rect x="12.5" y="8" width="3" height="10"/><rect x="18" y="5" width="3" height="13"/></svg>
+        Reports
+      </button>
+      <button class="tab-btn" data-screen="roadmap" data-roles="boss,manager" data-title="Roadmap">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 21V4l4-1 8 2 4-1v13l-4 1-8-2-4 1Z"/><path d="M8 3v14M16 5v14"/></svg>
+        Roadmap
+      </button>
+    </nav>
+
+    <div class="sidebar-footer">Draft v0.5 · 20 Aug 2026</div>
+  </aside>
+
+  <div class="main-wrap">
+    <header class="topbar">
+      <div class="topbar-title">
+        <div id="topbarTitle">Fleet Overview</div>
+      </div>
+      <div class="role-switch">
+        <span>Viewing as</span>
+        <div class="role-toggle">
+          <button class="role-btn active" data-role="boss">Boss</button>
+          <button class="role-btn" data-role="manager">Manager</button>
+        </div>
+      </div>
+    </header>
+
+    <main>
+
+      <!-- DASHBOARD -->
+      <section class="screen active" id="dashboard">
+        <h1 class="page-title">Fleet Overview</h1>
+        <p class="page-sub">What the bosses see first — today, at a glance.</p>
+
+        <div class="stat-row">
+          <div class="stat-tile accent-good">
+            <div class="stat-label">Trucks active now</div>
+            <div class="stat-value good">14 / 19</div>
+            <div class="stat-delta">5 idle or off-duty</div>
+          </div>
+          <div class="stat-tile accent-blue">
+            <div class="stat-label">Trips completed today</div>
+            <div class="stat-value">37</div>
+            <div class="stat-delta">vs. 41 avg last 7 days</div>
+          </div>
+          <div class="stat-tile accent-critical">
+            <div class="stat-label">Flagged idle (&gt;45 min)</div>
+            <div class="stat-value" style="color:var(--status-critical)">3</div>
+            <div class="stat-delta">trucks #07, #12, #16</div>
+          </div>
+          <div class="stat-tile">
+            <div class="stat-label">Drivers checked in</div>
+            <div class="stat-value">16 / 19</div>
+            <div class="stat-delta">3 no-show today</div>
+          </div>
+        </div>
+
+        <div class="two-col">
+          <div class="panel">
+            <div class="panel-title">Truck status — all 19 today</div>
+            <div class="panel-sub">Color = current state. Click a truck to see its driver, owner, and trip history. This grid is driven by however many trucks are on the roster — add or retire one in Operations and it appears/disappears here automatically, no rebuild needed.</div>
+            <div class="truck-grid">
+              <button class="truck-card st-working" data-truck="01"><div class="id">Truck #01</div><span class="status-pill working"><span class="status-dot"></span>Working</span><div class="truck-meta">Trip 3 of day</div><div class="tap-hint">Tap for details →</div></button>
+              <button class="truck-card st-working" data-truck="02"><div class="id">Truck #02</div><span class="status-pill working"><span class="status-dot"></span>Working</span><div class="truck-meta">Trip 2 of day</div><div class="tap-hint">Tap for details →</div></button>
+              <button class="truck-card st-off" data-truck="03"><div class="id">Truck #03</div><span class="status-pill off"><span class="status-dot"></span>Off duty</span><div class="truck-meta">Maintenance</div><div class="tap-hint">Tap for details →</div></button>
+              <button class="truck-card st-working" data-truck="04"><div class="id">Truck #04</div><span class="status-pill working"><span class="status-dot"></span>Working</span><div class="truck-meta">Trip 4 of day</div><div class="tap-hint">Tap for details →</div></button>
+              <button class="truck-card st-idle" data-truck="05"><div class="id">Truck #05</div><span class="status-pill idle"><span class="status-dot"></span>Idle 22m</span><div class="truck-meta">Between trips</div><div class="tap-hint">Tap for details →</div></button>
+              <button class="truck-card st-working" data-truck="06"><div class="id">Truck #06</div><span class="status-pill working"><span class="status-dot"></span>Working</span><div class="truck-meta">Trip 3 of day</div><div class="tap-hint">Tap for details →</div></button>
+              <button class="truck-card st-flagged" data-truck="07"><div class="id">Truck #07</div><span class="status-pill flagged"><span class="status-dot"></span>Idle 58m</span><div class="truck-meta">Flagged</div><div class="tap-hint">Tap for details →</div></button>
+              <button class="truck-card st-working" data-truck="08"><div class="id">Truck #08</div><span class="status-pill working"><span class="status-dot"></span>Working</span><div class="truck-meta">Trip 2 of day</div><div class="tap-hint">Tap for details →</div></button>
+              <button class="truck-card st-working" data-truck="09"><div class="id">Truck #09</div><span class="status-pill working"><span class="status-dot"></span>Working</span><div class="truck-meta">Trip 3 of day</div><div class="tap-hint">Tap for details →</div></button>
+              <button class="truck-card st-working" data-truck="10"><div class="id">Truck #10</div><span class="status-pill working"><span class="status-dot"></span>Working</span><div class="truck-meta">Trip 4 of day</div><div class="tap-hint">Tap for details →</div></button>
+              <button class="truck-card st-off" data-truck="11"><div class="id">Truck #11</div><span class="status-pill off"><span class="status-dot"></span>Off duty</span><div class="truck-meta">Driver no-show</div><div class="tap-hint">Tap for details →</div></button>
+              <button class="truck-card st-flagged" data-truck="12"><div class="id">Truck #12</div><span class="status-pill flagged"><span class="status-dot"></span>Idle 51m</span><div class="truck-meta">Flagged</div><div class="tap-hint">Tap for details →</div></button>
+              <button class="truck-card st-working" data-truck="13"><div class="id">Truck #13</div><span class="status-pill working"><span class="status-dot"></span>Working</span><div class="truck-meta">Trip 2 of day</div><div class="tap-hint">Tap for details →</div></button>
+              <button class="truck-card st-working" data-truck="14"><div class="id">Truck #14</div><span class="status-pill working"><span class="status-dot"></span>Working</span><div class="truck-meta">Trip 3 of day</div><div class="tap-hint">Tap for details →</div></button>
+              <button class="truck-card st-working" data-truck="15"><div class="id">Truck #15</div><span class="status-pill working"><span class="status-dot"></span>Working</span><div class="truck-meta">Trip 3 of day</div><div class="tap-hint">Tap for details →</div></button>
+              <button class="truck-card st-flagged" data-truck="16"><div class="id">Truck #16</div><span class="status-pill flagged"><span class="status-dot"></span>Idle 47m</span><div class="truck-meta">Flagged</div><div class="tap-hint">Tap for details →</div></button>
+              <button class="truck-card st-working" data-truck="17"><div class="id">Truck #17</div><span class="status-pill working"><span class="status-dot"></span>Working</span><div class="truck-meta">Trip 4 of day</div><div class="tap-hint">Tap for details →</div></button>
+              <button class="truck-card st-off" data-truck="18"><div class="id">Truck #18</div><span class="status-pill off"><span class="status-dot"></span>Off duty</span><div class="truck-meta">Driver no-show</div><div class="tap-hint">Tap for details →</div></button>
+              <button class="truck-card st-working" data-truck="19"><div class="id">Truck #19</div><span class="status-pill working"><span class="status-dot"></span>Working</span><div class="truck-meta">Trip 2 of day</div><div class="tap-hint">Tap for details →</div></button>
+            </div>
+          </div>
+
+          <div class="panel">
+            <div class="panel-title">Trips today</div>
+            <div class="panel-sub">Only one loading site exists right now, so this is fleet-wide. The moment a second site goes live, this panel splits into one bar per site automatically — same as the truck grid scales with fleet size.</div>
+            <div class="site-bars">
+              <div class="site-bar-row"><span class="name">Loading Site 1</span><div class="site-bar-track"><div class="site-bar-fill" style="width:100%;"></div></div><span class="count">37</span></div>
+            </div>
+            <div class="annot">"Departed" taps today (37) should track closely with completed trips — a big gap between taps and completions is itself a useful signal worth a second look.</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- OPERATIONS -->
+      <section class="screen" id="operations">
+        <h1 class="page-title">Manager Operations</h1>
+        <p class="page-sub">Where the on-site manager assigns trucks/drivers and marks vehicles in or out of service.</p>
+
+        <div class="panel">
+          <div class="panel-title">Today's shift log</div>
+          <div class="panel-sub">One tap, once a day, per truck: driver is here or not. This is attendance only — it does not track individual trips.</div>
+          <table class="data-table">
+            <thead>
+              <tr><th>Truck</th><th>Driver today</th><th>Owner</th><th>Login</th><th>Logout</th><th>Service state</th></tr>
+            </thead>
+            <tbody>
+              <tr><td><button class="truck-link" data-truck="01">#01</button></td><td>Ramesh K.</td><td>Driver-owned</td><td class="num">7:04 AM</td><td class="num">—</td><td><span class="toggle-btn on">In service</span></td></tr>
+              <tr><td><button class="truck-link" data-truck="03">#03</button></td><td>— unassigned —</td><td>Balaji Tankers Pvt Ltd</td><td class="num">—</td><td class="num">—</td><td><span class="toggle-btn off">In maintenance</span></td></tr>
+              <tr><td><button class="truck-link" data-truck="07">#07</button></td><td>Suresh P.</td><td>Driver-owned</td><td class="num">7:12 AM</td><td class="num">—</td><td><span class="toggle-btn on">In service</span></td></tr>
+              <tr><td><button class="truck-link" data-truck="11">#11</button></td><td>— no-show —</td><td>Balaji Tankers Pvt Ltd</td><td class="num">—</td><td class="num">—</td><td><span class="toggle-btn on">In service</span></td></tr>
+              <tr><td><button class="truck-link" data-truck="14">#14</button></td><td>Vinod S. <span style="color:var(--text-muted); font-weight:400;">(sub for Anil D.)</span></td><td>Anil D. (owner-driver)</td><td class="num">6:58 AM</td><td class="num">—</td><td><span class="toggle-btn on">In service</span></td></tr>
+            </tbody>
+          </table>
+          <div class="annot">"Driver today" can differ from the truck's regular owner-driver — see Truck #14, where Vinod is filling in. The system keeps both the regular assignment and today's actual driver, so trip history stays attributed correctly.</div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-title">Live trip tracking — the only per-trip action</div>
+          <div class="panel-sub">The manager taps "Mark departed" each time a truck pulls out of the loading site with a load. That single tap timestamps this trip's start <em>and</em> closes out the truck's previous trip (it's back, so it must have finished its last run). No separate "arrived" or "dumped" entry needed — see the Trip Log tab for how that duration gets recorded today vs. once GPS is added.</div>
+          <table class="data-table">
+            <thead>
+              <tr><th>Truck</th><th>Site</th><th>Current trip status</th><th>Trips today</th><th>Action</th></tr>
+            </thead>
+            <tbody>
+              <tr><td><button class="truck-link" data-truck="01">#01</button></td><td><select class="mock-select"><option>Loading Site 1</option></select></td><td><span class="status-pill working"><span class="status-dot"></span>Out — departed 9:42 AM</span></td><td class="num">3</td><td><button class="btn-primary">Mark departed</button></td></tr>
+              <tr><td><button class="truck-link" data-truck="07">#07</button></td><td><select class="mock-select"><option>Loading Site 1</option></select></td><td><span class="status-pill flagged"><span class="status-dot"></span>Out 58m — flagged</span></td><td class="num">2</td><td><button class="btn-primary">Mark departed</button></td></tr>
+              <tr><td><button class="truck-link" data-truck="14">#14</button></td><td><select class="mock-select"><option>Loading Site 1</option></select></td><td><span class="status-pill working"><span class="status-dot"></span>At yard — ready to load</span></td><td class="num">3</td><td><button class="btn-primary">Mark departed</button></td></tr>
+            </tbody>
+          </table>
+          <div class="annot">Only one site exists today (shown as "Loading Site 1"). The dropdown is already built to hold more — adding a second tunnel or dump site later is just adding an option here, not a redesign.</div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-title">Fleet roster</div>
+          <div class="panel-sub">The fleet isn't fixed at 19 — trucks get added when a new one joins (own or contracted) and retired when one leaves. Every screen in this system (Dashboard grid, Reports table, Trip Log) reads from this roster, so it grows or shrinks with one edit here, nothing rebuilt elsewhere.</div>
+          <div style="display:flex; gap:12px; align-items:center;">
+            <button class="btn-primary">+ Add truck</button>
+            <span class="annot" style="border-top:none; padding-top:0; margin-top:0;">19 active · 1 retired this year (mock)</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- TRIP LOG -->
+      <section class="screen" id="triplog">
+        <h1 class="page-title">Trip Log</h1>
+        <p class="page-sub">The record every "how many trips" and payment question gets answered from. Each row is built from one manager tap — "Departed" — that closes the previous trip and opens the next.</p>
+
+        <div class="panel">
+          <div class="panel-title">All trips — today</div>
+          <table class="data-table">
+            <thead>
+              <tr><th>Truck</th><th>Driver</th><th>Departed loading site</th><th>Dumped (source)</th><th>Duration</th><th>Status</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>#01</td><td>Ramesh K.</td><td class="num">7:20 AM</td><td class="num">8:05 AM <span style="color:var(--text-muted); font-weight:400;">(est. — next departure)</span></td><td class="num">~45m</td><td><span class="status-pill working"><span class="status-dot"></span>Completed</span></td></tr>
+              <tr><td>#01</td><td>Ramesh K.</td><td class="num">8:30 AM</td><td class="num">9:12 AM <span style="color:var(--text-muted); font-weight:400;">(est. — next departure)</span></td><td class="num">~42m</td><td><span class="status-pill working"><span class="status-dot"></span>Completed</span></td></tr>
+              <tr><td>#07</td><td>Suresh P.</td><td class="num">7:40 AM</td><td class="num">8:28 AM <span style="color:var(--text-muted); font-weight:400;">(est. — next departure)</span></td><td class="num">~48m</td><td><span class="status-pill working"><span class="status-dot"></span>Completed</span></td></tr>
+              <tr><td>#07</td><td>Suresh P.</td><td class="num">9:15 AM</td><td class="num">— in progress</td><td class="num">58m so far</td><td><span class="status-pill flagged"><span class="status-dot"></span>Out past normal cycle time — flagged</span></td></tr>
+              <tr><td>#14</td><td>Vinod S.</td><td class="num">7:15 AM</td><td class="num">8:01 AM <span style="color:var(--text-muted); font-weight:400;">(est. — next departure)</span></td><td class="num">~46m</td><td><span class="status-pill working"><span class="status-dot"></span>Completed</span></td></tr>
+            </tbody>
+          </table>
+          <div class="annot">"(est.)" means the dump time is inferred from when the truck next departed — that's all we can know without GPS. Once trackers are installed, this column switches to an exact GPS-confirmed timestamp automatically; nothing else about this screen changes. Filters (by truck, driver, date range) and export-to-Excel would sit above this table in the real build.</div>
+        </div>
+      </section>
+
+      <!-- REPORTS -->
+      <section class="screen" id="reports">
+        <h1 class="page-title">Reports</h1>
+        <p class="page-sub">The answer to "how many trips has truck #X made this week/month" — without calling the manager.</p>
+
+        <div class="panel">
+          <div class="filter-row">
+            <button class="filter-pill">Today</button>
+            <button class="filter-pill active">Last 7 days</button>
+            <button class="filter-pill">Last 30 days</button>
+            <button class="filter-pill">Custom range</button>
+          </div>
+          <div class="panel-title">Trips per truck — last 7 days</div>
+          <div class="panel-sub">Click a truck for its full profile. Numbers below are placeholder.</div>
+          <table class="data-table">
+            <thead>
+              <tr><th>Truck</th><th>Driver (current)</th><th>Owner</th><th>Trips today</th><th>Trips 7d</th><th>Trips 30d</th><th>Idle flags (7d)</th></tr>
+            </thead>
+            <tbody>
+              <tr><td><button class="truck-link" data-truck="01">#01</button></td><td>Ramesh K.</td><td>Driver-owned</td><td class="num">3</td><td class="num">21</td><td class="num">88</td><td class="num">0</td></tr>
+              <tr><td><button class="truck-link" data-truck="07">#07</button></td><td>Suresh P.</td><td>Driver-owned</td><td class="num">2</td><td class="num">17</td><td class="num">74</td><td class="num">4</td></tr>
+              <tr><td><button class="truck-link" data-truck="11">#11</button></td><td>— no-show —</td><td>Balaji Tankers Pvt Ltd</td><td class="num">0</td><td class="num">12</td><td class="num">61</td><td class="num">1</td></tr>
+              <tr><td><button class="truck-link" data-truck="14">#14</button></td><td>Vinod S. (sub)</td><td>Anil D. (owner-driver)</td><td class="num">3</td><td class="num">19</td><td class="num">83</td><td class="num">1</td></tr>
+            </tbody>
+          </table>
+          <div class="annot">Same table re-slices for "today" / "30 days" / a custom date range by tapping the pills above — no separate screen needed. Fleet-wide totals and a trend view (trips per day over time) would sit above this table in the real build.</div>
+        </div>
+      </section>
+
+      <!-- ROADMAP -->
+      <section class="screen" id="roadmap">
+        <h1 class="page-title">Roadmap</h1>
+        <p class="page-sub">No driver ever has to log in or use an app. Here's what changes as GPS hardware is added — same screens, better data underneath.</p>
+
+        <div class="two-col">
+          <div class="panel">
+            <div class="panel-title">Now — manager-tap model</div>
+            <div class="panel-sub">Live today, needs no new hardware.</div>
+            <table class="history-table">
+              <thead><tr><th>Event</th><th>How it's captured</th></tr></thead>
+              <tbody>
+                <tr><td>Driver present today</td><td>Manager marks login/logout once a day</td></tr>
+                <tr><td>Trip departs loading site</td><td>Manager taps "Mark departed" — one tap, no typing</td></tr>
+                <tr><td>Trip arrives/dumps at dump ground</td><td><strong>Estimated</strong> — inferred from the truck's next departure</td></tr>
+                <tr><td>Idle-truck flag</td><td>Time since last "departed" tap exceeds normal cycle time</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="panel">
+            <div class="panel-title">Later — GPS-confirmed model</div>
+            <div class="panel-sub">Once trackers are installed on trucks (separate hardware decision, not yet started).</div>
+            <table class="history-table">
+              <thead><tr><th>Event</th><th>How it's captured</th></tr></thead>
+              <tbody>
+                <tr><td>Driver present today</td><td>Same — manager marks login/logout</td></tr>
+                <tr><td>Trip departs loading site</td><td>Auto-detected by geofence — manager tap becomes a cross-check, not the source</td></tr>
+                <tr><td>Trip arrives/dumps at dump ground</td><td><strong>Exact</strong> — geofence-confirmed timestamp, no inference</td></tr>
+                <tr><td>Idle-truck flag</td><td>Real stationary-time detection, anywhere on the route — not just at the yard</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="panel-title">Why this order</div>
+          <div class="panel-sub" style="margin-bottom:0;">The manager-tap model needs no new hardware, no driver app, and no budget approval to start — it's ready as soon as this system is built. GPS adds precision (exact dump-site timestamps, full-route idle detection) but is a separate hardware/vendor decision with recurring cost, parked for later per our earlier discussion. Nothing built now gets thrown away when GPS arrives — it's an upgrade to where one column's data comes from, not a different system.</div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-title">Accounts &amp; access</div>
+          <div class="panel-sub" style="margin-bottom:0;">No public sign-up, no Google/social login — this stays a closed, admin-issued system to match a small operation. The owner creates a username + password for each person individually (one login per Boss, one per Manager, not shared credentials) and hands it to them directly. There's no self-serve "forgot password" — a forgotten password means asking the owner to reissue one. Nothing to build for this on the Boss/Manager screens; it's handled at setup, not as a feature either of them sees.</div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+</div>
+
+<!-- TRUCK / DRIVER DETAIL MODAL -->
+<div class="modal-overlay" id="truckModal">
+  <div class="modal-card">
+    <div class="modal-head">
+      <div class="modal-head-inner">
+        <div class="veh-icon" id="modalVehIcon">—</div>
+        <div>
+          <div class="veh-num" id="modalVeh">—</div>
+          <div class="veh-sub" id="modalOwnerLine">—</div>
+        </div>
+      </div>
+      <button class="modal-close" id="modalClose">✕</button>
+    </div>
+    <div class="modal-body">
+
+      <div class="modal-section">
+        <div class="modal-section-title">Current driver</div>
+        <div class="kv-grid">
+          <div class="kv-item"><div class="k">Name</div><div class="v" id="modalDriverName">—</div></div>
+          <div class="kv-item"><div class="k">Phone</div><div class="v" id="modalDriverPhone">—</div></div>
+          <div class="kv-item"><div class="k">Today's login</div><div class="v" id="modalLogin">—</div></div>
+          <div class="kv-item"><div class="k">Today's logout</div><div class="v" id="modalLogout">—</div></div>
+        </div>
+      </div>
+
+      <div class="modal-section">
+        <div class="modal-section-title">Owner &amp; payment</div>
+        <div class="kv-grid">
+          <div class="kv-item"><div class="k">Owner</div><div class="v" id="modalOwnerName">—</div></div>
+          <div class="kv-item"><div class="k">Owner phone</div><div class="v" id="modalOwnerPhone">—</div></div>
+          <div class="kv-item" style="grid-column: 1 / -1;"><div class="k">Payment account</div><div class="v" id="modalOwnerBank">—</div></div>
+        </div>
+      </div>
+
+      <div class="modal-section">
+        <div class="modal-section-title">Trip volume</div>
+        <div class="trip-summary-row">
+          <div class="trip-summary-cell"><div class="n" id="modalTripsToday">—</div><div class="l">Today</div></div>
+          <div class="trip-summary-cell"><div class="n" id="modalTrips7d">—</div><div class="l">7 days</div></div>
+          <div class="trip-summary-cell"><div class="n" id="modalTrips30d">—</div><div class="l">30 days</div></div>
+        </div>
+      </div>
+
+      <div class="modal-section">
+        <div class="modal-section-title">Driver assignment history</div>
+        <table class="history-table" id="modalHistory">
+          <thead><tr><th>Date</th><th>Driver</th><th>Note</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+  // Mock truck/driver/owner records — real build reads this from the truck & driver tables.
+  const TRUCK_DATA = {
+    "01": {
+      owner: { name: "Ramesh K.", type: "driver-owned", phone: "+91 98xxxx1234", bank: "Ramesh K. — HDFC Bank •••• 4521" },
+      driver: { name: "Ramesh K.", phone: "+91 98xxxx1234" },
+      login: "7:04 AM", logout: "—",
+      trips: { today: 3, d7: 21, d30: 88 },
+      history: [
+        ["20 Aug", "Ramesh K.", "Regular driver"],
+        ["19 Aug", "Ramesh K.", "Regular driver"],
+        ["18 Aug", "Ramesh K.", "Regular driver"],
+      ]
+    },
+    "03": {
+      owner: { name: "Balaji Tankers Pvt Ltd", type: "third-party", phone: "+91 90xxxx7788", bank: "Balaji Tankers Pvt Ltd — ICICI Bank •••• 9012" },
+      driver: { name: "— unassigned —", phone: "—" },
+      login: "—", logout: "—",
+      trips: { today: 0, d7: 12, d30: 61 },
+      history: [
+        ["19 Aug", "Manoj T.", "Regular driver"],
+        ["18 Aug", "Manoj T.", "Regular driver"],
+        ["17 Aug", "Manoj T.", "Regular driver"],
+      ]
+    },
+    "07": {
+      owner: { name: "Suresh P.", type: "driver-owned", phone: "+91 97xxxx3345", bank: "Suresh P. — SBI •••• 7710" },
+      driver: { name: "Suresh P.", phone: "+91 97xxxx3345" },
+      login: "7:12 AM", logout: "—",
+      trips: { today: 2, d7: 17, d30: 74 },
+      history: [
+        ["20 Aug", "Suresh P.", "Regular driver"],
+        ["19 Aug", "Suresh P.", "Regular driver"],
+        ["18 Aug", "Suresh P.", "Regular driver"],
+      ]
+    },
+    "11": {
+      owner: { name: "Balaji Tankers Pvt Ltd", type: "third-party", phone: "+91 90xxxx7788", bank: "Balaji Tankers Pvt Ltd — ICICI Bank •••• 9012" },
+      driver: { name: "Anil D. (no-show today)", phone: "+91 96xxxx4410" },
+      login: "—", logout: "—",
+      trips: { today: 0, d7: 12, d30: 61 },
+      history: [
+        ["19 Aug", "Anil D.", "Regular driver"],
+        ["18 Aug", "Anil D.", "Regular driver"],
+        ["17 Aug", "Vinod S.", "Substitute — Anil on leave"],
+      ]
+    },
+    "14": {
+      owner: { name: "Anil D.", type: "driver-owned", phone: "+91 96xxxx4410", bank: "Anil D. — Axis Bank •••• 2298" },
+      driver: { name: "Vinod S. (substitute)", phone: "+91 95xxxx9982" },
+      login: "6:58 AM", logout: "—",
+      trips: { today: 3, d7: 19, d30: 83 },
+      history: [
+        ["20 Aug", "Vinod S.", "Substitute — Anil on leave"],
+        ["19 Aug", "Anil D.", "Regular driver"],
+        ["18 Aug", "Anil D.", "Regular driver"],
+      ]
+    },
+  };
+  const DEFAULT_TRUCK = {
+    owner: { name: "— not yet on file —", type: "driver-owned", phone: "—", bank: "—" },
+    driver: { name: "— not yet on file —", phone: "—" },
+    login: "—", logout: "—",
+    trips: { today: 0, d7: 0, d30: 0 },
+    history: []
+  };
+
+  function openTruckModal(id) {
+    const d = TRUCK_DATA[id] || DEFAULT_TRUCK;
+    document.getElementById('modalVehIcon').textContent = "#" + id;
+    document.getElementById('modalVeh').textContent = "Truck #" + id;
+    document.getElementById('modalOwnerLine').innerHTML =
+      (d.owner.type === "driver-owned" ? "Driver-owned" : "Owned by third-party company") +
+      '<span class="owner-badge ' + (d.owner.type === "driver-owned" ? "driver-owned" : "third-party") + '">' +
+      (d.owner.type === "driver-owned" ? "Driver-owned" : "Third-party") + '</span>';
+    document.getElementById('modalDriverName').textContent = d.driver.name;
+    document.getElementById('modalDriverPhone').textContent = d.driver.phone;
+    document.getElementById('modalLogin').textContent = d.login;
+    document.getElementById('modalLogout').textContent = d.logout;
+    document.getElementById('modalOwnerName').textContent = d.owner.name;
+    document.getElementById('modalOwnerPhone').textContent = d.owner.phone;
+    document.getElementById('modalOwnerBank').textContent = d.owner.bank;
+    document.getElementById('modalTripsToday').textContent = d.trips.today;
+    document.getElementById('modalTrips7d').textContent = d.trips.d7;
+    document.getElementById('modalTrips30d').textContent = d.trips.d30;
+    const tbody = document.querySelector('#modalHistory tbody');
+    tbody.innerHTML = d.history.length
+      ? d.history.map(r => `<tr><td>${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td></tr>`).join('')
+      : '<tr><td colspan="3" style="color:var(--text-muted)">No history recorded yet</td></tr>';
+    document.getElementById('truckModal').classList.add('open');
+  }
+  function closeTruckModal() {
+    document.getElementById('truckModal').classList.remove('open');
+  }
+  document.querySelectorAll('[data-truck]').forEach(el => {
+    el.addEventListener('click', () => openTruckModal(el.dataset.truck));
+  });
+  document.getElementById('modalClose').addEventListener('click', closeTruckModal);
+  document.getElementById('truckModal').addEventListener('click', (e) => {
+    if (e.target.id === 'truckModal') closeTruckModal();
+  });
+
+  // Report date-range pills (visual only — swap the table in the real build)
+  document.querySelectorAll('.filter-row .filter-pill').forEach(p => {
+    p.addEventListener('click', () => {
+      p.parentElement.querySelectorAll('.filter-pill').forEach(x => x.classList.remove('active'));
+      p.classList.add('active');
+    });
+  });
+</script>
+
+<script>
+  const tabBtns = document.querySelectorAll('.tab-btn');
+  function showScreen(screenId) {
+    tabBtns.forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    const btn = document.querySelector('.tab-btn[data-screen="' + screenId + '"]');
+    if (btn) {
+      btn.classList.add('active');
+      document.getElementById('topbarTitle').textContent = btn.dataset.title || btn.textContent.trim();
+    }
+    document.getElementById(screenId).classList.add('active');
+  }
+  tabBtns.forEach(btn => {
+    btn.addEventListener('click', () => showScreen(btn.dataset.screen));
+  });
+
+  function applyRole(role) {
+    let firstVisible = null;
+    tabBtns.forEach(btn => {
+      const roles = (btn.dataset.roles || '').split(',');
+      const visible = roles.includes(role);
+      btn.style.display = visible ? '' : 'none';
+      if (visible && !firstVisible) firstVisible = btn.dataset.screen;
+    });
+    // If the currently active screen isn't visible for this role, jump to the first visible one
+    const activeBtn = document.querySelector('.tab-btn.active');
+    if (!activeBtn || activeBtn.style.display === 'none') {
+      showScreen(firstVisible);
+    }
+  }
+  document.querySelectorAll('.role-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.role-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      applyRole(btn.dataset.role);
+    });
+  });
+  applyRole('boss');
+</script>
+
+</body>
+</html>
