@@ -89,10 +89,11 @@
   .sidebar-brand { display: flex; align-items: center; gap: 10px; padding: 0 8px 6px; }
   .brand-mark {
     width: 36px; height: 36px; border-radius: 10px; flex-shrink: 0;
-    background: var(--series-1);
+    background: var(--series-1); overflow: hidden;
     display: flex; align-items: center; justify-content: center;
     color: white; font-weight: 700; font-size: 14px;
   }
+  .brand-mark img { width: 100%; height: 100%; object-fit: cover; display: block; }
   .brand-name { font-weight: 700; font-size: 14.5px; color: var(--text-primary); line-height: 1.25; }
   .brand-sub-small { font-size: 11px; color: var(--text-muted); margin-top: 1px; }
 
@@ -302,9 +303,10 @@
       width: 100%; height: auto; position: sticky; top: 0; z-index: 30;
       flex-direction: row; align-items: center; padding: 10px 12px; gap: 10px;
     }
-    .sidebar-brand { padding: 0; flex-shrink: 0; }
+    .sidebar-brand { padding: 0; flex-shrink: 0; gap: 0; }
+    .brand-text { display: none; }
     .fleet-tag { display: none; }
-    .side-nav { flex-direction: row; flex: 1; gap: 3px; overflow-x: auto; padding-bottom: 2px; }
+    .side-nav { flex-direction: row; flex: 1; gap: 3px; overflow-x: auto; padding-bottom: 2px; min-width: 0; }
     .side-nav-label { display: none; }
     .tab-btn { flex-direction: column; gap: 3px; font-size: 10px; padding: 6px 9px; white-space: nowrap; width: auto; }
     .tab-btn.active { box-shadow: inset 0 -2px 0 var(--series-1); }
@@ -527,7 +529,7 @@
 <div class="login-screen" id="loginScreen">
   <div class="login-card">
     <div class="login-brand">
-      <div class="brand-mark">CE</div>
+      <div class="brand-mark"><img src="icon-192.png" alt="Chahitya Enterprise logo"></div>
       <div>
         <div class="brand-name" style="color:var(--text-primary);">Chahitya Enterprise</div>
         <div class="brand-sub-small" style="color:var(--text-muted);">Fleet Ops</div>
@@ -555,8 +557,8 @@
 <div class="app-shell">
   <aside class="sidebar">
     <div class="sidebar-brand">
-      <div class="brand-mark">CE</div>
-      <div>
+      <div class="brand-mark"><img src="icon-192.png" alt="Chahitya Enterprise logo"></div>
+      <div class="brand-text">
         <div class="brand-name">Chahitya Enterprise</div>
         <div class="brand-sub-small">Fleet Ops</div>
       </div>
