@@ -750,11 +750,9 @@
       <!-- OPERATIONS -->
       <section class="screen" id="operations">
         <h1 class="page-title">Manager Operations</h1>
-        <p class="page-sub">Where the on-site manager assigns tankers/drivers and marks vehicles in or out of service.</p>
 
         <div class="panel">
           <div class="panel-title">Today's shift log</div>
-          <div class="panel-sub">Real — this is live now. Log a tanker in once a day with its driver; log it out at end of day. This is attendance only — it does not track individual trips.</div>
 
           <form class="add-truck-form" id="shiftLogForm">
             <div class="add-truck-grid">
@@ -788,24 +786,21 @@
             </thead>
             <tbody id="shiftLogBody"><tr><td colspan="6" style="color:var(--text-muted)">Loading…</td></tr></tbody>
           </table>
-          <div class="annot">A tanker already logged in today won't appear again in the form above until it's logged out — check the table before re-adding it.</div>
         </div>
 
         <div class="panel">
           <div class="panel-title">Live trip tracking</div>
-          <div class="panel-sub">Real — this is live now. Tap "Mark departed" each time a tanker pulls out of the loading site with a load — timestamps that trip's start and, if a trip was already open for this tanker, closes it out as returned first. If a tanker is back at the yard and done for now — nothing more to load, or its day is over — tap "Mark returned" instead so it stops showing as still out on the road. Needs the tanker logged into today's shift log first, so there's a driver to attribute the trip to.</div>
           <table class="data-table">
             <thead>
               <tr><th>Tanker</th><th>Current trip status</th><th>Trips today</th><th>Challan</th><th>Action</th></tr>
             </thead>
             <tbody id="tripTrackingBody"><tr><td colspan="5" style="color:var(--text-muted)">Loading…</td></tr></tbody>
           </table>
-          <div class="annot" id="tripTrackingStatus">Tankers logged into today's shift log appear here. Trips are tagged to a single active loading site, created automatically the first time this is used.</div>
+          <div class="annot" id="tripTrackingStatus"></div>
         </div>
 
         <div class="panel">
           <div class="panel-title">Challans due</div>
-          <div class="panel-sub">Real — this is live now. Every completed trip needs its challan attached here, tied directly to that trip — tap "Attach challan" for whichever tanker's paperwork you're holding, whether that's right after it returns or in a batch at the end of the day.</div>
           <table class="data-table">
             <thead>
               <tr><th>Tanker</th><th>Driver</th><th>Departed</th><th>Action</th></tr>
@@ -816,7 +811,6 @@
 
         <div class="panel">
           <div class="panel-title">Fleet roster</div>
-          <div class="panel-sub">Real — this is live now. Add a tanker once here and it's on file everywhere else in the system (shift log, trip tracking, and eventually the dashboard) automatically.</div>
           <div style="display:flex; gap:12px; align-items:center; margin-bottom:16px;">
             <button class="btn-primary" id="addTruckBtn" type="button">+ Add tanker</button>
             <span class="annot" id="fleetRosterCount" style="border-top:none; padding-top:0; margin-top:0;">Loading…</span>
@@ -868,7 +862,6 @@
 
         <div class="panel">
           <div class="panel-title">Drivers</div>
-          <div class="panel-sub">Real — this is live now. Add a driver once here and their Aadhar card and driving license are stored with them, staying on file even as they move between tankers — no need to re-upload.</div>
           <div style="display:flex; gap:12px; align-items:center; margin-bottom:16px;">
             <button class="btn-primary" id="addDriverBtn" type="button">+ Add driver</button>
           </div>
