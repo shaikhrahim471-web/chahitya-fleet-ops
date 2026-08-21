@@ -17,6 +17,7 @@
 <meta name="apple-mobile-web-app-title" content="Fleet Ops">
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -357,6 +358,14 @@
   }
   .filter-pill.active { background: var(--series-1); color: white; border-color: var(--series-1); box-shadow: 0 2px 6px rgba(42,120,214,0.3); }
   .filter-pill:not(.active):hover { border-color: var(--series-1); color: var(--series-1); }
+
+  .lowest-badge {
+    display: inline-block; font-size: 10.5px; font-weight: 700; letter-spacing: 0.02em;
+    padding: 2px 8px; border-radius: 999px; margin-left: 8px; vertical-align: middle;
+    background: rgba(208,59,59,0.12); color: var(--status-critical);
+  }
+  .panel-head-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 4px; }
+  .panel-head-row .panel-sub { margin-bottom: 0; }
 
   /* Truck / driver detail modal */
   .modal-overlay {
@@ -831,8 +840,11 @@
         <p class="page-sub">The record every "how many trips" and payment question gets answered from. Each row is built from one manager tap — "Departed" — that closes the previous trip and opens the next.</p>
 
         <div class="panel">
-          <div class="panel-title">All trips</div>
-          <div class="panel-sub">Real — this is live now. A busy day can run 50-60+ trips, so filter by date, tanker, driver, or status instead of scrolling.</div>
+          <div class="panel-head-row">
+            <div class="panel-title" style="margin-bottom:0;">All trips</div>
+            <button class="btn-primary" id="tripLogExportBtn" type="button">⬇ Export to Excel</button>
+          </div>
+          <div class="panel-sub">Real — this is live now. A busy day can run 50-60+ trips, so filter by date, tanker, driver, or status instead of scrolling. Export downloads exactly what's shown below, with your filters applied.</div>
           <div class="trip-log-filters">
             <div class="add-truck-field">
               <label for="tripLogDate">Date</label>
@@ -879,6 +891,7 @@
             <button class="filter-pill" data-range="1">Today</button>
             <button class="filter-pill active" data-range="7">Last 7 days</button>
             <button class="filter-pill" data-range="30">Last 30 days</button>
+            <button class="filter-pill" data-range="0">All time</button>
           </div>
           <div class="panel-title" id="reportsTitle">Trips per tanker — last 7 days</div>
           <div class="panel-sub">Real — this is live now. Click a tanker for its full profile.</div>
@@ -888,7 +901,29 @@
             </thead>
             <tbody id="reportsBody"><tr><td colspan="6" style="color:var(--text-muted)">Loading…</td></tr></tbody>
           </table>
-          <div class="annot">Same table re-slices for "today" / "30 days" by tapping the pills above — no separate screen needed. A custom date range picker, fleet-wide totals, and a trend view (trips per day over time) would sit above this table in the real build.</div>
+          <div class="annot">Same table re-slices for "today" / "30 days" / "all time" by tapping the pills above — no separate screen needed. A custom date range picker and a trend view (trips per day over time) would sit above this table in the real build.</div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-title" id="utilTitle">Fleet utilization — last 7 days</div>
+          <div class="panel-sub">Total trips per driver and per tanker for the selected range above. The lowest performer in each list is flagged, so gaps are visible without scrolling through the roster.</div>
+          <div class="two-col">
+            <div>
+              <div class="panel-title" style="font-size:14px; margin-bottom:10px;">Trips per driver</div>
+              <table class="data-table">
+                <thead><tr><th>Driver</th><th class="num">Trips</th></tr></thead>
+                <tbody id="utilDriverBody"><tr><td colspan="2" style="color:var(--text-muted)">Loading…</td></tr></tbody>
+              </table>
+            </div>
+            <div>
+              <div class="panel-title" style="font-size:14px; margin-bottom:10px;">Trips per tanker</div>
+              <table class="data-table">
+                <thead><tr><th>Tanker</th><th class="num">Trips</th></tr></thead>
+                <tbody id="utilVehicleBody"><tr><td colspan="2" style="color:var(--text-muted)">Loading…</td></tr></tbody>
+              </table>
+            </div>
+          </div>
+          <div class="annot">Sorted highest to lowest. A driver or tanker with zero trips in range still appears, so someone sitting idle shows up immediately.</div>
         </div>
       </section>
 
@@ -1218,6 +1253,8 @@
     vehSel.value = prevVeh; drvSel.value = prevDrv;
   }
 
+  let currentTripLogRows = [];
+
   async function loadTripLog() {
     const tbody = document.getElementById('tripLogBody');
     if (!tbody) return;
@@ -1250,6 +1287,7 @@
       return { t, dumped, durMin, flagged: !dumped && durMin > 90 };
     });
     if (statusFilter === 'flagged') rows = rows.filter(r => r.flagged);
+    currentTripLogRows = rows;
 
     if (!rows.length) {
       tbody.innerHTML = '<tr><td colspan="6" style="color:var(--text-muted)">No trips match these filters.</td></tr>';
@@ -1286,18 +1324,39 @@
     loadTripLog();
   });
 
+  document.getElementById('tripLogExportBtn')?.addEventListener('click', () => {
+    if (typeof XLSX === 'undefined') { alert('The export library did not load — check your connection and try again.'); return; }
+    if (!currentTripLogRows.length) { alert('No trips match the current filters, so there is nothing to export.'); return; }
+    const exportRows = currentTripLogRows.map(({ t, dumped, durMin, flagged }) => ({
+      'Tanker': t.vehicles ? t.vehicles.registration_number : '—',
+      'Driver': t.drivers ? t.drivers.name : '—',
+      'Departed loading site': new Date(t.departed_at).toLocaleString('en-IN'),
+      'Dumped (source)': dumped ? new Date(t.dumped_at).toLocaleString('en-IN') + (t.dumped_at_source === 'estimated' ? ' (est.)' : ' (GPS)') : 'In progress',
+      'Duration (min)': durMin,
+      'Status': flagged ? 'Flagged' : (dumped ? 'Completed' : 'In progress'),
+    }));
+    const ws = XLSX.utils.json_to_sheet(exportRows);
+    ws['!cols'] = [{ wch: 14 }, { wch: 18 }, { wch: 22 }, { wch: 30 }, { wch: 14 }, { wch: 12 }];
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Trip Log');
+    const dateVal = document.getElementById('tripLogDate')?.value || todayStr();
+    XLSX.writeFile(wb, 'chahitya-trip-log-' + dateVal + '.xlsx');
+  });
+
   // ----- Reports (Boss) -----
   async function loadReports(days) {
     const tbody = document.getElementById('reportsBody');
     if (!tbody) return;
     tbody.innerHTML = '<tr><td colspan="6" style="color:var(--text-muted)">Loading…</td></tr>';
     const today = todayStr();
-    const since = new Date(Date.now() - days * 86400000).toISOString();
+    const since = days > 0 ? new Date(Date.now() - days * 86400000).toISOString() : null;
     const { data: vehicles, error } = await sb.from('vehicles')
       .select('id, registration_number, owners(name, owner_type)')
       .order('registration_number');
     if (error || !vehicles) { tbody.innerHTML = '<tr><td colspan="6" style="color:var(--status-critical)">Could not load: ' + (error ? error.message : 'unknown error') + '</td></tr>'; return; }
-    const { data: rangeTrips } = await sb.from('trips').select('id, vehicle_id, departed_at, dumped_at').gte('departed_at', since);
+    let rangeTripsQuery = sb.from('trips').select('id, vehicle_id, departed_at, dumped_at');
+    if (since) rangeTripsQuery = rangeTripsQuery.gte('departed_at', since);
+    const { data: rangeTrips } = await rangeTripsQuery;
     const { data: todayShift } = await sb.from('shift_logs').select('vehicle_id, drivers(name)').eq('shift_date', today);
     const currentDriverByVehicle = {};
     (todayShift || []).forEach(r => { currentDriverByVehicle[r.vehicle_id] = r.drivers ? r.drivers.name : null; });
@@ -1326,14 +1385,55 @@
     tbody.querySelectorAll('[data-truck]').forEach(el => el.addEventListener('click', () => openTruckModal(el.dataset.truck)));
   }
 
+  // ----- Fleet utilization (Boss) — trips per driver / per tanker, lowest flagged -----
+  async function loadFleetUtilization(days) {
+    const drvBody = document.getElementById('utilDriverBody');
+    const vehBody = document.getElementById('utilVehicleBody');
+    if (!drvBody || !vehBody) return;
+    drvBody.innerHTML = '<tr><td colspan="2" style="color:var(--text-muted)">Loading…</td></tr>';
+    vehBody.innerHTML = '<tr><td colspan="2" style="color:var(--text-muted)">Loading…</td></tr>';
+    const [{ data: drivers }, { data: vehicles }] = await Promise.all([
+      sb.from('drivers').select('id, name').eq('active', true).order('name'),
+      sb.from('vehicles').select('id, registration_number').order('registration_number'),
+    ]);
+    let tripsQuery = sb.from('trips').select('driver_id, vehicle_id, departed_at');
+    if (days > 0) tripsQuery = tripsQuery.gte('departed_at', new Date(Date.now() - days * 86400000).toISOString());
+    const { data: trips, error } = await tripsQuery;
+    if (error) {
+      drvBody.innerHTML = '<tr><td colspan="2" style="color:var(--status-critical)">Could not load: ' + error.message + '</td></tr>';
+      vehBody.innerHTML = '<tr><td colspan="2" style="color:var(--status-critical)">Could not load.</td></tr>';
+      return;
+    }
+    const drvCounts = {}, vehCounts = {};
+    (trips || []).forEach(t => {
+      if (t.driver_id) drvCounts[t.driver_id] = (drvCounts[t.driver_id] || 0) + 1;
+      if (t.vehicle_id) vehCounts[t.vehicle_id] = (vehCounts[t.vehicle_id] || 0) + 1;
+    });
+    function renderUtil(body, items, counts, emptyLabel) {
+      if (!items || !items.length) { body.innerHTML = '<tr><td colspan="2" style="color:var(--text-muted)">' + emptyLabel + '</td></tr>'; return; }
+      const rows = items.map(it => ({ label: it.name || it.registration_number, count: counts[it.id] || 0 }));
+      rows.sort((a, b) => b.count - a.count);
+      const minCount = Math.min.apply(null, rows.map(r => r.count));
+      body.innerHTML = rows.map(r => {
+        const isLowest = r.count === minCount;
+        return '<tr><td>' + r.label + (isLowest ? ' <span class="lowest-badge">Lowest</span>' : '') + '</td><td class="num">' + r.count + '</td></tr>';
+      }).join('');
+    }
+    renderUtil(drvBody, drivers, drvCounts, 'No active drivers on file yet.');
+    renderUtil(vehBody, vehicles, vehCounts, 'No tankers on file yet.');
+  }
+
   document.querySelectorAll('#reportsFilterRow .filter-pill').forEach(p => {
     p.addEventListener('click', () => {
       document.querySelectorAll('#reportsFilterRow .filter-pill').forEach(x => x.classList.remove('active'));
       p.classList.add('active');
       const days = parseInt(p.dataset.range, 10);
-      document.getElementById('reportsTitle').textContent =
-        'Trips per tanker — ' + (days === 1 ? 'today' : 'last ' + days + ' days');
+      const rangeLabel = days === 0 ? 'all time' : (days === 1 ? 'today' : 'last ' + days + ' days');
+      document.getElementById('reportsTitle').textContent = 'Trips per tanker — ' + rangeLabel;
+      const utilTitle = document.getElementById('utilTitle');
+      if (utilTitle) utilTitle.textContent = 'Fleet utilization — ' + rangeLabel;
       loadReports(days);
+      loadFleetUtilization(days);
     });
   });
 </script>
@@ -1440,7 +1540,7 @@
     renderUserChip();
     applyRole(currentUser.role);
     showApp();
-    if (currentUser.role === 'boss') { loadSettingsData(); loadDashboard(); loadReports(7); }
+    if (currentUser.role === 'boss') { loadSettingsData(); loadDashboard(); loadReports(7); loadFleetUtilization(7); }
     if (currentUser.role === 'manager') { loadFleetRoster(); loadDrivers(); loadShiftFormOptions(); loadShiftLog(); loadTripTracking(); }
     await loadTripLogFilterOptions();
     loadTripLog();
