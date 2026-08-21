@@ -526,6 +526,9 @@
     width: 100%; font: inherit; font-size: 12.5px; padding: 8px 10px;
     border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface-1);
   }
+
+  .trip-log-filters { display: flex; flex-wrap: wrap; gap: 12px 14px; margin-bottom: 16px; align-items: flex-end; }
+  .trip-log-filters .add-truck-field { flex: 1 1 150px; min-width: 130px; }
 </style>
 </head>
 <body>
@@ -828,15 +831,41 @@
         <p class="page-sub">The record every "how many trips" and payment question gets answered from. Each row is built from one manager tap — "Departed" — that closes the previous trip and opens the next.</p>
 
         <div class="panel">
-          <div class="panel-title">All trips — today</div>
-          <div class="panel-sub">Real — this is live now.</div>
+          <div class="panel-title">All trips</div>
+          <div class="panel-sub">Real — this is live now. A busy day can run 50-60+ trips, so filter by date, tanker, driver, or status instead of scrolling.</div>
+          <div class="trip-log-filters">
+            <div class="add-truck-field">
+              <label for="tripLogDate">Date</label>
+              <input type="date" id="tripLogDate">
+            </div>
+            <div class="add-truck-field">
+              <label for="tripLogVehicleFilter">Tanker</label>
+              <select id="tripLogVehicleFilter"><option value="">All tankers</option></select>
+            </div>
+            <div class="add-truck-field">
+              <label for="tripLogDriverFilter">Driver</label>
+              <select id="tripLogDriverFilter"><option value="">All drivers</option></select>
+            </div>
+            <div class="add-truck-field">
+              <label for="tripLogStatusFilter">Status</label>
+              <select id="tripLogStatusFilter">
+                <option value="">All statuses</option>
+                <option value="completed">Completed</option>
+                <option value="in_progress">In progress</option>
+                <option value="flagged">Flagged</option>
+              </select>
+            </div>
+            <div class="add-truck-field" style="flex:0 0 auto; align-self:flex-end;">
+              <button class="btn-secondary" id="tripLogFilterClear" type="button">Clear filters</button>
+            </div>
+          </div>
           <table class="data-table">
             <thead>
               <tr><th>Tanker</th><th>Driver</th><th>Departed loading site</th><th>Dumped (source)</th><th>Duration</th><th>Status</th></tr>
             </thead>
             <tbody id="tripLogBody"><tr><td colspan="6" style="color:var(--text-muted)">Loading…</td></tr></tbody>
           </table>
-          <div class="annot">"(est.)" means the dump time is inferred from when the tanker next departed — that's all we can know without GPS. Once trackers are installed, this column switches to an exact GPS-confirmed timestamp automatically; nothing else about this screen changes. Filters (by tanker, driver, date range) and export-to-Excel would sit above this table in the real build.</div>
+          <div class="annot" id="tripLogCount">"(est.)" means the dump time is inferred from when the tanker next departed — that's all we can know without GPS. Once trackers are installed, this column switches to an exact GPS-confirmed timestamp automatically; nothing else about this screen changes.</div>
         </div>
       </section>
 
@@ -1170,24 +1199,64 @@
       '"Departed" taps today (' + (todayTrips || []).length + ') should track closely with completed trips (' + doneToday + ') — a big gap between taps and completions is itself a useful signal worth a second look.';
   }
 
-  // ----- Trip Log (Boss + Manager) -----
+  // ----- Trip Log (Boss + Manager) — filterable so a 50-60 trip day doesn't mean endless scrolling -----
+  async function loadTripLogFilterOptions() {
+    const vehSel = document.getElementById('tripLogVehicleFilter');
+    const drvSel = document.getElementById('tripLogDriverFilter');
+    const dateInput = document.getElementById('tripLogDate');
+    if (!vehSel || !drvSel) return;
+    if (dateInput && !dateInput.value) dateInput.value = todayStr();
+    const [{ data: vehicles }, { data: drivers }] = await Promise.all([
+      sb.from('vehicles').select('id, registration_number').order('registration_number'),
+      sb.from('drivers').select('id, name').eq('active', true).order('name'),
+    ]);
+    const prevVeh = vehSel.value, prevDrv = drvSel.value;
+    vehSel.innerHTML = '<option value="">All tankers</option>' +
+      (vehicles || []).map(v => '<option value="' + v.id + '">' + v.registration_number + '</option>').join('');
+    drvSel.innerHTML = '<option value="">All drivers</option>' +
+      (drivers || []).map(d => '<option value="' + d.id + '">' + d.name + '</option>').join('');
+    vehSel.value = prevVeh; drvSel.value = prevDrv;
+  }
+
   async function loadTripLog() {
     const tbody = document.getElementById('tripLogBody');
     if (!tbody) return;
-    const today = todayStr();
-    const { data, error } = await sb.from('trips')
+    const dateVal = document.getElementById('tripLogDate')?.value || todayStr();
+    const vehicleId = document.getElementById('tripLogVehicleFilter')?.value || '';
+    const driverId = document.getElementById('tripLogDriverFilter')?.value || '';
+    const statusFilter = document.getElementById('tripLogStatusFilter')?.value || '';
+    const nextDate = new Date(dateVal + 'T00:00:00.000Z');
+    nextDate.setUTCDate(nextDate.getUTCDate() + 1);
+
+    let query = sb.from('trips')
       .select('id, departed_at, dumped_at, dumped_at_source, status, vehicles(registration_number), drivers(name)')
-      .gte('departed_at', today + 'T00:00:00.000Z')
+      .gte('departed_at', dateVal + 'T00:00:00.000Z')
+      .lt('departed_at', nextDate.toISOString())
       .order('departed_at', { ascending: false })
-      .limit(100);
+      .limit(200);
+    if (vehicleId) query = query.eq('vehicle_id', vehicleId);
+    if (driverId) query = query.eq('driver_id', driverId);
+    if (statusFilter === 'completed' || statusFilter === 'in_progress') query = query.eq('status', statusFilter);
+
+    const { data, error } = await query;
+    const countEl = document.getElementById('tripLogCount');
     if (error) { tbody.innerHTML = '<tr><td colspan="6" style="color:var(--status-critical)">Could not load: ' + error.message + '</td></tr>'; return; }
-    if (!data || !data.length) { tbody.innerHTML = '<tr><td colspan="6" style="color:var(--text-muted)">No trips recorded yet today.</td></tr>'; return; }
     const now = Date.now();
-    tbody.innerHTML = data.map(t => {
+    let rows = data || [];
+    rows = rows.map(t => {
       const dep = new Date(t.departed_at).getTime();
       const dumped = t.dumped_at ? new Date(t.dumped_at).getTime() : null;
       const durMin = Math.round(((dumped || now) - dep) / 60000);
-      const flagged = !dumped && durMin > 90;
+      return { t, dumped, durMin, flagged: !dumped && durMin > 90 };
+    });
+    if (statusFilter === 'flagged') rows = rows.filter(r => r.flagged);
+
+    if (!rows.length) {
+      tbody.innerHTML = '<tr><td colspan="6" style="color:var(--text-muted)">No trips match these filters.</td></tr>';
+      if (countEl) countEl.textContent = '0 trips match the current filters.';
+      return;
+    }
+    tbody.innerHTML = rows.map(({ t, dumped, durMin, flagged }) => {
       const dumpedCell = dumped
         ? fmtTime(t.dumped_at) + ' <span style="color:var(--text-muted); font-weight:400;">(' + (t.dumped_at_source === 'estimated' ? 'est. — next departure' : 'GPS') + ')</span>'
         : '— in progress';
@@ -1201,7 +1270,21 @@
         '<td class="num">' + fmtTime(t.departed_at) + '</td><td class="num">' + dumpedCell + '</td>' +
         '<td class="num">' + durCell + '</td><td>' + statusCell + '</td></tr>';
     }).join('');
+    if (countEl) {
+      countEl.textContent = rows.length + ' trip' + (rows.length === 1 ? '' : 's') + ' match the current filters. "(est.)" means the dump time is inferred from when the tanker next departed — once trackers are installed this switches to an exact GPS-confirmed timestamp automatically.';
+    }
   }
+
+  ['tripLogDate', 'tripLogVehicleFilter', 'tripLogDriverFilter', 'tripLogStatusFilter'].forEach(id => {
+    document.getElementById(id)?.addEventListener('change', () => loadTripLog());
+  });
+  document.getElementById('tripLogFilterClear')?.addEventListener('click', () => {
+    document.getElementById('tripLogDate').value = todayStr();
+    document.getElementById('tripLogVehicleFilter').value = '';
+    document.getElementById('tripLogDriverFilter').value = '';
+    document.getElementById('tripLogStatusFilter').value = '';
+    loadTripLog();
+  });
 
   // ----- Reports (Boss) -----
   async function loadReports(days) {
@@ -1359,6 +1442,7 @@
     showApp();
     if (currentUser.role === 'boss') { loadSettingsData(); loadDashboard(); loadReports(7); }
     if (currentUser.role === 'manager') { loadFleetRoster(); loadDrivers(); loadShiftFormOptions(); loadShiftLog(); loadTripTracking(); }
+    await loadTripLogFilterOptions();
     loadTripLog();
   }
 
