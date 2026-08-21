@@ -507,6 +507,34 @@
   }
   .btn-ghost-sm:hover { border-color: var(--text-muted); color: var(--text-primary); }
 
+  /* ===== Notification bell ===== */
+  .notif-wrap { position: relative; }
+  .notif-bell {
+    position: relative; width: 32px; height: 32px; border-radius: 999px;
+    border: 1px solid var(--border); background: var(--surface-1); cursor: pointer;
+    display: flex; align-items: center; justify-content: center; font-size: 14px; padding: 0;
+  }
+  .notif-bell:hover { border-color: var(--text-muted); }
+  .notif-dot {
+    position: absolute; top: 1px; right: 1px; width: 8px; height: 8px; border-radius: 999px;
+    background: var(--status-critical); border: 1.5px solid var(--surface-1);
+  }
+  .notif-panel {
+    display: none; position: absolute; top: calc(100% + 8px); right: 0; width: 320px; max-width: calc(100vw - 24px);
+    max-height: 380px; overflow-y: auto; background: var(--surface-1); border: 1px solid var(--border);
+    border-radius: var(--radius-md); box-shadow: var(--shadow-2); z-index: 40; padding: 4px 0;
+  }
+  .notif-panel.open { display: block; }
+  .notif-panel-head {
+    font-family: var(--font-disp); font-weight: 700; font-size: 12.5px; padding: 10px 14px 8px;
+    border-bottom: 1px solid var(--gridline); color: var(--text-secondary);
+  }
+  .notif-item { padding: 10px 14px; border-bottom: 1px solid var(--gridline); font-size: 12px; line-height: 1.45; }
+  .notif-item:last-child { border-bottom: none; }
+  .notif-item .who { font-weight: 700; }
+  .notif-item .when { color: var(--text-muted); font-size: 10.5px; margin-top: 2px; }
+  .notif-empty { padding: 18px 14px; text-align: center; color: var(--text-muted); font-size: 12px; }
+
   /* ===== Settings screen: storage + compression ===== */
   .storage-bar-track { background: var(--gridline); border-radius: 6px; height: 14px; overflow: hidden; margin: 10px 0 6px; }
   .storage-bar-fill { height: 100%; border-radius: 6px; background: linear-gradient(90deg, var(--series-1), #4a92e3); transition: width 0.3s ease; }
@@ -646,7 +674,7 @@
   <div class="main-wrap">
     <header class="topbar">
       <div class="topbar-title">
-        <div id="topbarTitle">Fleet Overview</div>
+        <div id="topbarWelcome">Welcome</div>
       </div>
       <div class="topbar-clock" id="topbarClock">
         <div class="clock-time" id="clockTime">—</div>
@@ -658,6 +686,16 @@
           <span class="role-badge boss" id="userRoleBadge">—</span>
         </div>
         <div class="avatar-circle" id="userAvatar">—</div>
+        <div class="notif-wrap">
+          <button class="notif-bell" id="notifBellBtn" type="button" aria-label="Notifications">
+            🔔
+            <span class="notif-dot" id="notifDot" style="display:none;"></span>
+          </button>
+          <div class="notif-panel" id="notifPanel">
+            <div class="notif-panel-head">Notifications</div>
+            <div id="notifList"><div class="notif-empty">Loading…</div></div>
+          </div>
+        </div>
         <button class="btn-ghost-sm" id="logoutBtn">Log out</button>
       </div>
     </header>
@@ -1621,7 +1659,6 @@
     const btn = document.querySelector('.tab-btn[data-screen="' + screenId + '"]');
     if (btn) {
       btn.classList.add('active');
-      document.getElementById('topbarTitle').textContent = btn.dataset.title || btn.textContent.trim();
     }
     document.getElementById(screenId).classList.add('active');
   }
@@ -1684,16 +1721,17 @@
   }
 
   async function loadCurrentUserProfile(authUser) {
-    const { data, error } = await sb.from('app_users').select('name, role, active').eq('id', authUser.id).single();
+    const { data, error } = await sb.from('app_users').select('name, role, active, notifications_seen_at').eq('id', authUser.id).single();
     if (error || !data) {
       return null;
     }
-    return { id: authUser.id, email: authUser.email, name: data.name, role: data.role, active: data.active };
+    return { id: authUser.id, email: authUser.email, name: data.name, role: data.role, active: data.active, notifications_seen_at: data.notifications_seen_at };
   }
 
   function renderUserChip() {
     if (!currentUser) return;
     document.getElementById('userName').textContent = currentUser.name || currentUser.email;
+    document.getElementById('topbarWelcome').textContent = 'Welcome, ' + (currentUser.name || currentUser.email);
     const badge = document.getElementById('userRoleBadge');
     badge.textContent = currentUser.role === 'manager' ? 'Manager' : 'Director';
     badge.className = 'role-badge ' + (currentUser.role === 'manager' ? 'manager' : 'boss');
@@ -1719,6 +1757,9 @@
     if (currentUser.role === 'manager') { loadFleetRoster(); loadDrivers(); loadShiftFormOptions(); loadShiftLog(); loadTripTracking(); }
     await loadTripLogFilterOptions();
     loadTripLog();
+    refreshNotifBadge();
+    if (notifPollTimer) clearInterval(notifPollTimer);
+    notifPollTimer = setInterval(refreshNotifBadge, 90000);
   }
 
   document.getElementById('loginForm').addEventListener('submit', async (e) => {
@@ -1737,10 +1778,100 @@
   document.getElementById('logoutBtn').addEventListener('click', async () => {
     await sb.auth.signOut();
     currentUser = null;
+    if (notifPollTimer) { clearInterval(notifPollTimer); notifPollTimer = null; }
+    document.getElementById('notifPanel').classList.remove('open');
+    document.getElementById('notifDot').style.display = 'none';
     document.getElementById('loginEmail').value = '';
     document.getElementById('loginPassword').value = '';
     showLogin();
   });
+
+  // ----- Notifications: recent challan/document uploads (the Manager's activity) -----
+  let notifPollTimer = null;
+  let latestNotifItems = [];
+
+  async function fetchNotificationItems() {
+    const [{ data: challans }, { data: docs }] = await Promise.all([
+      sb.from('challans').select('id, uploaded_at, uploaded_by, vehicles(registration_number), app_users(name)').order('uploaded_at', { ascending: false }).limit(15),
+      sb.from('documents').select('id, uploaded_at, uploaded_by, entity_type, entity_id, doc_type, app_users(name)').order('uploaded_at', { ascending: false }).limit(15),
+    ]);
+    const items = [];
+    (challans || []).forEach(c => {
+      items.push({
+        at: c.uploaded_at,
+        by: c.app_users ? c.app_users.name : 'Someone',
+        byId: c.uploaded_by,
+        text: 'uploaded a challan' + (c.vehicles ? ' for ' + c.vehicles.registration_number : ''),
+      });
+    });
+    const driverIds = Array.from(new Set((docs || []).filter(d => d.entity_type === 'driver').map(d => d.entity_id)));
+    const vehicleIds = Array.from(new Set((docs || []).filter(d => d.entity_type === 'vehicle').map(d => d.entity_id)));
+    const driverNames = {}, vehicleNames = {};
+    if (driverIds.length) {
+      const { data } = await sb.from('drivers').select('id, name').in('id', driverIds);
+      (data || []).forEach(d => { driverNames[d.id] = d.name; });
+    }
+    if (vehicleIds.length) {
+      const { data } = await sb.from('vehicles').select('id, registration_number').in('id', vehicleIds);
+      (data || []).forEach(v => { vehicleNames[v.id] = v.registration_number; });
+    }
+    const docLabel = { aadhar: 'an Aadhar card', license: 'a driving license', rc: 'an RC', insurance: 'an insurance paper', permit: 'a permit', puc: 'a PUC certificate' };
+    (docs || []).forEach(d => {
+      const entityName = d.entity_type === 'driver' ? (driverNames[d.entity_id] || 'a driver') : (vehicleNames[d.entity_id] || 'a tanker');
+      items.push({
+        at: d.uploaded_at,
+        by: d.app_users ? d.app_users.name : 'Someone',
+        byId: d.uploaded_by,
+        text: 'uploaded ' + (docLabel[d.doc_type] || ('a ' + d.doc_type)) + ' for ' + entityName,
+      });
+    });
+    items.sort((a, b) => new Date(b.at) - new Date(a.at));
+    return items.slice(0, 20);
+  }
+
+  function renderNotifList(items) {
+    const list = document.getElementById('notifList');
+    if (!items.length) { list.innerHTML = '<div class="notif-empty">No activity yet — you\'ll see it here when a challan or a document is uploaded.</div>'; return; }
+    list.innerHTML = items.map(it => {
+      const who = currentUser && it.byId === currentUser.id ? 'You' : (it.by || 'Someone');
+      return '<div class="notif-item"><div><span class="who">' + who + '</span> ' + it.text + '</div><div class="when">' + fmtWhen(it.at) + '</div></div>';
+    }).join('');
+  }
+
+  async function refreshNotifBadge() {
+    if (!currentUser) return;
+    const items = await fetchNotificationItems();
+    latestNotifItems = items;
+    const seenAt = currentUser.notifications_seen_at ? new Date(currentUser.notifications_seen_at) : new Date(0);
+    const unread = items.filter(it => it.byId !== currentUser.id && new Date(it.at) > seenAt).length;
+    document.getElementById('notifDot').style.display = unread > 0 ? 'block' : 'none';
+  }
+
+  const notifBellBtn = document.getElementById('notifBellBtn');
+  const notifPanel = document.getElementById('notifPanel');
+  if (notifBellBtn && notifPanel) {
+    notifBellBtn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const opening = !notifPanel.classList.contains('open');
+      if (!opening) { notifPanel.classList.remove('open'); return; }
+      notifPanel.classList.add('open');
+      document.getElementById('notifList').innerHTML = '<div class="notif-empty">Loading…</div>';
+      const items = await fetchNotificationItems();
+      latestNotifItems = items;
+      renderNotifList(items);
+      document.getElementById('notifDot').style.display = 'none';
+      if (currentUser) {
+        const now = new Date().toISOString();
+        currentUser.notifications_seen_at = now;
+        sb.from('app_users').update({ notifications_seen_at: now }).eq('id', currentUser.id);
+      }
+    });
+    document.addEventListener('click', (e) => {
+      if (notifPanel.classList.contains('open') && !notifPanel.contains(e.target) && e.target !== notifBellBtn) {
+        notifPanel.classList.remove('open');
+      }
+    });
+  }
 
   // ----- Settings screen: storage usage + compression banner -----
   function fmtBytes(n) {
