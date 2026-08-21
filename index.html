@@ -550,63 +550,41 @@
         <h1 class="page-title">Fleet Overview</h1>
         <p class="page-sub">What the bosses see first — today, at a glance.</p>
 
-        <div class="stat-row">
+        <div class="stat-row" id="dashStatRow">
           <div class="stat-tile accent-good">
             <div class="stat-label">Trucks active now</div>
-            <div class="stat-value good">14 / 19</div>
-            <div class="stat-delta">5 idle or off-duty</div>
+            <div class="stat-value good" id="dashStatOut">—</div>
+            <div class="stat-delta" id="dashStatOutSub">Loading…</div>
           </div>
           <div class="stat-tile accent-blue">
             <div class="stat-label">Trips completed today</div>
-            <div class="stat-value">37</div>
-            <div class="stat-delta">vs. 41 avg last 7 days</div>
+            <div class="stat-value" id="dashStatTrips">—</div>
+            <div class="stat-delta" id="dashStatTripsSub">Loading…</div>
           </div>
           <div class="stat-tile accent-critical">
-            <div class="stat-label">Flagged idle (&gt;45 min)</div>
-            <div class="stat-value" style="color:var(--status-critical)">3</div>
-            <div class="stat-delta">trucks #07, #12, #16</div>
+            <div class="stat-label">Flagged (out &gt;90 min)</div>
+            <div class="stat-value" style="color:var(--status-critical)" id="dashStatFlagged">—</div>
+            <div class="stat-delta" id="dashStatFlaggedSub">Loading…</div>
           </div>
           <div class="stat-tile">
             <div class="stat-label">Drivers checked in</div>
-            <div class="stat-value">16 / 19</div>
-            <div class="stat-delta">3 no-show today</div>
+            <div class="stat-value" id="dashStatCheckedIn">—</div>
+            <div class="stat-delta" id="dashStatCheckedInSub">Loading…</div>
           </div>
         </div>
 
         <div class="two-col">
           <div class="panel">
-            <div class="panel-title">Truck status — all 19 today</div>
-            <div class="panel-sub">Color = current state. Click a truck to see its driver, owner, and trip history. This grid is driven by however many trucks are on the roster — add or retire one in Operations and it appears/disappears here automatically, no rebuild needed.</div>
-            <div class="truck-grid">
-              <button class="truck-card st-working" data-truck="01"><div class="id">Truck #01</div><span class="status-pill working"><span class="status-dot"></span>Working</span><div class="truck-meta">Trip 3 of day</div><div class="tap-hint">Tap for details →</div></button>
-              <button class="truck-card st-working" data-truck="02"><div class="id">Truck #02</div><span class="status-pill working"><span class="status-dot"></span>Working</span><div class="truck-meta">Trip 2 of day</div><div class="tap-hint">Tap for details →</div></button>
-              <button class="truck-card st-off" data-truck="03"><div class="id">Truck #03</div><span class="status-pill off"><span class="status-dot"></span>Off duty</span><div class="truck-meta">Maintenance</div><div class="tap-hint">Tap for details →</div></button>
-              <button class="truck-card st-working" data-truck="04"><div class="id">Truck #04</div><span class="status-pill working"><span class="status-dot"></span>Working</span><div class="truck-meta">Trip 4 of day</div><div class="tap-hint">Tap for details →</div></button>
-              <button class="truck-card st-idle" data-truck="05"><div class="id">Truck #05</div><span class="status-pill idle"><span class="status-dot"></span>Idle 22m</span><div class="truck-meta">Between trips</div><div class="tap-hint">Tap for details →</div></button>
-              <button class="truck-card st-working" data-truck="06"><div class="id">Truck #06</div><span class="status-pill working"><span class="status-dot"></span>Working</span><div class="truck-meta">Trip 3 of day</div><div class="tap-hint">Tap for details →</div></button>
-              <button class="truck-card st-flagged" data-truck="07"><div class="id">Truck #07</div><span class="status-pill flagged"><span class="status-dot"></span>Idle 58m</span><div class="truck-meta">Flagged</div><div class="tap-hint">Tap for details →</div></button>
-              <button class="truck-card st-working" data-truck="08"><div class="id">Truck #08</div><span class="status-pill working"><span class="status-dot"></span>Working</span><div class="truck-meta">Trip 2 of day</div><div class="tap-hint">Tap for details →</div></button>
-              <button class="truck-card st-working" data-truck="09"><div class="id">Truck #09</div><span class="status-pill working"><span class="status-dot"></span>Working</span><div class="truck-meta">Trip 3 of day</div><div class="tap-hint">Tap for details →</div></button>
-              <button class="truck-card st-working" data-truck="10"><div class="id">Truck #10</div><span class="status-pill working"><span class="status-dot"></span>Working</span><div class="truck-meta">Trip 4 of day</div><div class="tap-hint">Tap for details →</div></button>
-              <button class="truck-card st-off" data-truck="11"><div class="id">Truck #11</div><span class="status-pill off"><span class="status-dot"></span>Off duty</span><div class="truck-meta">Driver no-show</div><div class="tap-hint">Tap for details →</div></button>
-              <button class="truck-card st-flagged" data-truck="12"><div class="id">Truck #12</div><span class="status-pill flagged"><span class="status-dot"></span>Idle 51m</span><div class="truck-meta">Flagged</div><div class="tap-hint">Tap for details →</div></button>
-              <button class="truck-card st-working" data-truck="13"><div class="id">Truck #13</div><span class="status-pill working"><span class="status-dot"></span>Working</span><div class="truck-meta">Trip 2 of day</div><div class="tap-hint">Tap for details →</div></button>
-              <button class="truck-card st-working" data-truck="14"><div class="id">Truck #14</div><span class="status-pill working"><span class="status-dot"></span>Working</span><div class="truck-meta">Trip 3 of day</div><div class="tap-hint">Tap for details →</div></button>
-              <button class="truck-card st-working" data-truck="15"><div class="id">Truck #15</div><span class="status-pill working"><span class="status-dot"></span>Working</span><div class="truck-meta">Trip 3 of day</div><div class="tap-hint">Tap for details →</div></button>
-              <button class="truck-card st-flagged" data-truck="16"><div class="id">Truck #16</div><span class="status-pill flagged"><span class="status-dot"></span>Idle 47m</span><div class="truck-meta">Flagged</div><div class="tap-hint">Tap for details →</div></button>
-              <button class="truck-card st-working" data-truck="17"><div class="id">Truck #17</div><span class="status-pill working"><span class="status-dot"></span>Working</span><div class="truck-meta">Trip 4 of day</div><div class="tap-hint">Tap for details →</div></button>
-              <button class="truck-card st-off" data-truck="18"><div class="id">Truck #18</div><span class="status-pill off"><span class="status-dot"></span>Off duty</span><div class="truck-meta">Driver no-show</div><div class="tap-hint">Tap for details →</div></button>
-              <button class="truck-card st-working" data-truck="19"><div class="id">Truck #19</div><span class="status-pill working"><span class="status-dot"></span>Working</span><div class="truck-meta">Trip 2 of day</div><div class="tap-hint">Tap for details →</div></button>
-            </div>
+            <div class="panel-title" id="dashGridTitle">Truck status — today</div>
+            <div class="panel-sub">Real — this is live now. Color = current state. Click a truck to see its driver, owner, and trip history. This grid is driven by however many trucks are on the roster — add or retire one in Operations and it appears/disappears here automatically, no rebuild needed.</div>
+            <div class="truck-grid" id="dashTruckGrid"><div style="color:var(--text-muted); padding:8px;">Loading…</div></div>
           </div>
 
           <div class="panel">
             <div class="panel-title">Trips today</div>
             <div class="panel-sub">Only one loading site exists right now, so this is fleet-wide. The moment a second site goes live, this panel splits into one bar per site automatically — same as the truck grid scales with fleet size.</div>
-            <div class="site-bars">
-              <div class="site-bar-row"><span class="name">Loading Site 1</span><div class="site-bar-track"><div class="site-bar-fill" style="width:100%;"></div></div><span class="count">37</span></div>
-            </div>
-            <div class="annot">"Departed" taps today (37) should track closely with completed trips — a big gap between taps and completions is itself a useful signal worth a second look.</div>
+            <div class="site-bars" id="dashSiteBars"><div style="color:var(--text-muted); padding:8px;">Loading…</div></div>
+            <div class="annot" id="dashSiteAnnot">"Departed" taps today should track closely with completed trips — a big gap between taps and completions is itself a useful signal worth a second look.</div>
           </div>
         </div>
       </section>
@@ -737,17 +715,12 @@
 
         <div class="panel">
           <div class="panel-title">All trips — today</div>
+          <div class="panel-sub">Real — this is live now.</div>
           <table class="data-table">
             <thead>
               <tr><th>Truck</th><th>Driver</th><th>Departed loading site</th><th>Dumped (source)</th><th>Duration</th><th>Status</th></tr>
             </thead>
-            <tbody>
-              <tr><td>#01</td><td>Ramesh K.</td><td class="num">7:20 AM</td><td class="num">8:05 AM <span style="color:var(--text-muted); font-weight:400;">(est. — next departure)</span></td><td class="num">~45m</td><td><span class="status-pill working"><span class="status-dot"></span>Completed</span></td></tr>
-              <tr><td>#01</td><td>Ramesh K.</td><td class="num">8:30 AM</td><td class="num">9:12 AM <span style="color:var(--text-muted); font-weight:400;">(est. — next departure)</span></td><td class="num">~42m</td><td><span class="status-pill working"><span class="status-dot"></span>Completed</span></td></tr>
-              <tr><td>#07</td><td>Suresh P.</td><td class="num">7:40 AM</td><td class="num">8:28 AM <span style="color:var(--text-muted); font-weight:400;">(est. — next departure)</span></td><td class="num">~48m</td><td><span class="status-pill working"><span class="status-dot"></span>Completed</span></td></tr>
-              <tr><td>#07</td><td>Suresh P.</td><td class="num">9:15 AM</td><td class="num">— in progress</td><td class="num">58m so far</td><td><span class="status-pill flagged"><span class="status-dot"></span>Out past normal cycle time — flagged</span></td></tr>
-              <tr><td>#14</td><td>Vinod S.</td><td class="num">7:15 AM</td><td class="num">8:01 AM <span style="color:var(--text-muted); font-weight:400;">(est. — next departure)</span></td><td class="num">~46m</td><td><span class="status-pill working"><span class="status-dot"></span>Completed</span></td></tr>
-            </tbody>
+            <tbody id="tripLogBody"><tr><td colspan="6" style="color:var(--text-muted)">Loading…</td></tr></tbody>
           </table>
           <div class="annot">"(est.)" means the dump time is inferred from when the truck next departed — that's all we can know without GPS. Once trackers are installed, this column switches to an exact GPS-confirmed timestamp automatically; nothing else about this screen changes. Filters (by truck, driver, date range) and export-to-Excel would sit above this table in the real build.</div>
         </div>
@@ -759,26 +732,20 @@
         <p class="page-sub">The answer to "how many trips has truck #X made this week/month" — without calling the manager.</p>
 
         <div class="panel">
-          <div class="filter-row">
-            <button class="filter-pill">Today</button>
-            <button class="filter-pill active">Last 7 days</button>
-            <button class="filter-pill">Last 30 days</button>
-            <button class="filter-pill">Custom range</button>
+          <div class="filter-row" id="reportsFilterRow">
+            <button class="filter-pill" data-range="1">Today</button>
+            <button class="filter-pill active" data-range="7">Last 7 days</button>
+            <button class="filter-pill" data-range="30">Last 30 days</button>
           </div>
-          <div class="panel-title">Trips per truck — last 7 days</div>
-          <div class="panel-sub">Click a truck for its full profile. Numbers below are placeholder.</div>
+          <div class="panel-title" id="reportsTitle">Trips per truck — last 7 days</div>
+          <div class="panel-sub">Real — this is live now. Click a truck for its full profile.</div>
           <table class="data-table">
             <thead>
-              <tr><th>Truck</th><th>Driver (current)</th><th>Owner</th><th>Trips today</th><th>Trips 7d</th><th>Trips 30d</th><th>Idle flags (7d)</th></tr>
+              <tr><th>Truck</th><th>Driver (current)</th><th>Owner</th><th>Trips today</th><th>Trips in range</th><th>Long trips (&gt;90m, in range)</th></tr>
             </thead>
-            <tbody>
-              <tr><td><button class="truck-link" data-truck="01">#01</button></td><td>Ramesh K.</td><td>Driver-owned</td><td class="num">3</td><td class="num">21</td><td class="num">88</td><td class="num">0</td></tr>
-              <tr><td><button class="truck-link" data-truck="07">#07</button></td><td>Suresh P.</td><td>Driver-owned</td><td class="num">2</td><td class="num">17</td><td class="num">74</td><td class="num">4</td></tr>
-              <tr><td><button class="truck-link" data-truck="11">#11</button></td><td>— no-show —</td><td>Balaji Tankers Pvt Ltd</td><td class="num">0</td><td class="num">12</td><td class="num">61</td><td class="num">1</td></tr>
-              <tr><td><button class="truck-link" data-truck="14">#14</button></td><td>Vinod S. (sub)</td><td>Anil D. (owner-driver)</td><td class="num">3</td><td class="num">19</td><td class="num">83</td><td class="num">1</td></tr>
-            </tbody>
+            <tbody id="reportsBody"><tr><td colspan="6" style="color:var(--text-muted)">Loading…</td></tr></tbody>
           </table>
-          <div class="annot">Same table re-slices for "today" / "30 days" / a custom date range by tapping the pills above — no separate screen needed. Fleet-wide totals and a trend view (trips per day over time) would sit above this table in the real build.</div>
+          <div class="annot">Same table re-slices for "today" / "30 days" by tapping the pills above — no separate screen needed. A custom date range picker, fleet-wide totals, and a trend view (trips per day over time) would sit above this table in the real build.</div>
         </div>
       </section>
 
@@ -926,112 +893,207 @@
 </div>
 
 <script>
-  // Mock truck/driver/owner records — real build reads this from the truck & driver tables.
-  const TRUCK_DATA = {
-    "01": {
-      owner: { name: "Ramesh K.", type: "driver-owned", phone: "+91 98xxxx1234", bank: "Ramesh K. — HDFC Bank •••• 4521" },
-      driver: { name: "Ramesh K.", phone: "+91 98xxxx1234" },
-      login: "7:04 AM", logout: "—",
-      trips: { today: 3, d7: 21, d30: 88 },
-      history: [
-        ["20 Aug", "Ramesh K.", "Regular driver"],
-        ["19 Aug", "Ramesh K.", "Regular driver"],
-        ["18 Aug", "Ramesh K.", "Regular driver"],
-      ]
-    },
-    "03": {
-      owner: { name: "Balaji Tankers Pvt Ltd", type: "third-party", phone: "+91 90xxxx7788", bank: "Balaji Tankers Pvt Ltd — ICICI Bank •••• 9012" },
-      driver: { name: "— unassigned —", phone: "—" },
-      login: "—", logout: "—",
-      trips: { today: 0, d7: 12, d30: 61 },
-      history: [
-        ["19 Aug", "Manoj T.", "Regular driver"],
-        ["18 Aug", "Manoj T.", "Regular driver"],
-        ["17 Aug", "Manoj T.", "Regular driver"],
-      ]
-    },
-    "07": {
-      owner: { name: "Suresh P.", type: "driver-owned", phone: "+91 97xxxx3345", bank: "Suresh P. — SBI •••• 7710" },
-      driver: { name: "Suresh P.", phone: "+91 97xxxx3345" },
-      login: "7:12 AM", logout: "—",
-      trips: { today: 2, d7: 17, d30: 74 },
-      history: [
-        ["20 Aug", "Suresh P.", "Regular driver"],
-        ["19 Aug", "Suresh P.", "Regular driver"],
-        ["18 Aug", "Suresh P.", "Regular driver"],
-      ]
-    },
-    "11": {
-      owner: { name: "Balaji Tankers Pvt Ltd", type: "third-party", phone: "+91 90xxxx7788", bank: "Balaji Tankers Pvt Ltd — ICICI Bank •••• 9012" },
-      driver: { name: "Anil D. (no-show today)", phone: "+91 96xxxx4410" },
-      login: "—", logout: "—",
-      trips: { today: 0, d7: 12, d30: 61 },
-      history: [
-        ["19 Aug", "Anil D.", "Regular driver"],
-        ["18 Aug", "Anil D.", "Regular driver"],
-        ["17 Aug", "Vinod S.", "Substitute — Anil on leave"],
-      ]
-    },
-    "14": {
-      owner: { name: "Anil D.", type: "driver-owned", phone: "+91 96xxxx4410", bank: "Anil D. — Axis Bank •••• 2298" },
-      driver: { name: "Vinod S. (substitute)", phone: "+91 95xxxx9982" },
-      login: "6:58 AM", logout: "—",
-      trips: { today: 3, d7: 19, d30: 83 },
-      history: [
-        ["20 Aug", "Vinod S.", "Substitute — Anil on leave"],
-        ["19 Aug", "Anil D.", "Regular driver"],
-        ["18 Aug", "Anil D.", "Regular driver"],
-      ]
-    },
-  };
-  const DEFAULT_TRUCK = {
-    owner: { name: "— not yet on file —", type: "driver-owned", phone: "—", bank: "—" },
-    driver: { name: "— not yet on file —", phone: "—" },
-    login: "—", logout: "—",
-    trips: { today: 0, d7: 0, d30: 0 },
-    history: []
-  };
-
-  function openTruckModal(id) {
-    const d = TRUCK_DATA[id] || DEFAULT_TRUCK;
-    document.getElementById('modalVehIcon').textContent = "#" + id;
-    document.getElementById('modalVeh').textContent = "Truck #" + id;
-    document.getElementById('modalOwnerLine').innerHTML =
-      (d.owner.type === "driver-owned" ? "Driver-owned" : "Owned by third-party company") +
-      '<span class="owner-badge ' + (d.owner.type === "driver-owned" ? "driver-owned" : "third-party") + '">' +
-      (d.owner.type === "driver-owned" ? "Driver-owned" : "Third-party") + '</span>';
-    document.getElementById('modalDriverName').textContent = d.driver.name;
-    document.getElementById('modalDriverPhone').textContent = d.driver.phone;
-    document.getElementById('modalLogin').textContent = d.login;
-    document.getElementById('modalLogout').textContent = d.logout;
-    document.getElementById('modalOwnerName').textContent = d.owner.name;
-    document.getElementById('modalOwnerPhone').textContent = d.owner.phone;
-    document.getElementById('modalOwnerBank').textContent = d.owner.bank;
-    document.getElementById('modalTripsToday').textContent = d.trips.today;
-    document.getElementById('modalTrips7d').textContent = d.trips.d7;
-    document.getElementById('modalTrips30d').textContent = d.trips.d30;
-    const tbody = document.querySelector('#modalHistory tbody');
-    tbody.innerHTML = d.history.length
-      ? d.history.map(r => `<tr><td>${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td></tr>`).join('')
-      : '<tr><td colspan="3" style="color:var(--text-muted)">No history recorded yet</td></tr>';
+  // ----- Truck detail modal (real — reads vehicles/owners/shift_logs/trips) -----
+  async function openTruckModal(vehicleId) {
+    document.getElementById('modalVeh').textContent = 'Loading…';
     document.getElementById('truckModal').classList.add('open');
+    const { data: v, error } = await sb.from('vehicles')
+      .select('id, registration_number, owners(name, owner_type, phone, payment_account)')
+      .eq('id', vehicleId).single();
+    if (error || !v) {
+      document.getElementById('modalVeh').textContent = 'Could not load truck details';
+      return;
+    }
+    const owner = v.owners || { name: '— not on file —', owner_type: 'driver_owned', phone: '—', payment_account: '—' };
+    document.getElementById('modalVehIcon').textContent = v.registration_number.slice(-2);
+    document.getElementById('modalVeh').textContent = v.registration_number;
+    const isDriverOwned = owner.owner_type !== 'third_party';
+    document.getElementById('modalOwnerLine').innerHTML =
+      (isDriverOwned ? 'Driver-owned' : 'Owned by third-party company') +
+      '<span class="owner-badge ' + (isDriverOwned ? 'driver-owned' : 'third-party') + '">' +
+      (isDriverOwned ? 'Driver-owned' : 'Third-party') + '</span>';
+    document.getElementById('modalOwnerName').textContent = owner.name || '—';
+    document.getElementById('modalOwnerPhone').textContent = owner.phone || '—';
+    document.getElementById('modalOwnerBank').textContent = owner.payment_account || '—';
+
+    const today = todayStr();
+    const { data: todayShift } = await sb.from('shift_logs')
+      .select('login_time, logout_time, drivers(name, phone)')
+      .eq('vehicle_id', vehicleId).eq('shift_date', today).order('login_time', { ascending: false }).limit(1);
+    const shift = todayShift && todayShift.length ? todayShift[0] : null;
+    document.getElementById('modalDriverName').textContent = shift && shift.drivers ? shift.drivers.name : '— not logged in today —';
+    document.getElementById('modalDriverPhone').textContent = shift && shift.drivers ? (shift.drivers.phone || '—') : '—';
+    document.getElementById('modalLogin').textContent = shift ? fmtTime(shift.login_time) : '—';
+    document.getElementById('modalLogout').textContent = shift ? fmtTime(shift.logout_time) : '—';
+
+    const d7 = new Date(Date.now() - 7 * 86400000).toISOString();
+    const d30 = new Date(Date.now() - 30 * 86400000).toISOString();
+    const [{ count: cToday }, { count: c7 }, { count: c30 }] = await Promise.all([
+      sb.from('trips').select('id', { count: 'exact', head: true }).eq('vehicle_id', vehicleId).gte('departed_at', today + 'T00:00:00.000Z'),
+      sb.from('trips').select('id', { count: 'exact', head: true }).eq('vehicle_id', vehicleId).gte('departed_at', d7),
+      sb.from('trips').select('id', { count: 'exact', head: true }).eq('vehicle_id', vehicleId).gte('departed_at', d30),
+    ]);
+    document.getElementById('modalTripsToday').textContent = cToday ?? 0;
+    document.getElementById('modalTrips7d').textContent = c7 ?? 0;
+    document.getElementById('modalTrips30d').textContent = c30 ?? 0;
+
+    const { data: history } = await sb.from('shift_logs')
+      .select('shift_date, service_state, drivers(name)')
+      .eq('vehicle_id', vehicleId).order('shift_date', { ascending: false }).limit(10);
+    const tbody = document.querySelector('#modalHistory tbody');
+    tbody.innerHTML = (history && history.length)
+      ? history.map(r => `<tr><td>${r.shift_date}</td><td>${r.drivers ? r.drivers.name : '—'}</td><td>${r.service_state === 'maintenance' ? 'In maintenance that day' : 'Regular shift'}</td></tr>`).join('')
+      : '<tr><td colspan="3" style="color:var(--text-muted)">No shift history recorded yet</td></tr>';
   }
   function closeTruckModal() {
     document.getElementById('truckModal').classList.remove('open');
   }
-  document.querySelectorAll('[data-truck]').forEach(el => {
-    el.addEventListener('click', () => openTruckModal(el.dataset.truck));
-  });
   document.getElementById('modalClose').addEventListener('click', closeTruckModal);
   document.getElementById('truckModal').addEventListener('click', (e) => {
     if (e.target.id === 'truckModal') closeTruckModal();
   });
 
-  // Report date-range pills (visual only — swap the table in the real build)
-  document.querySelectorAll('.filter-row .filter-pill').forEach(p => {
+  // ----- Dashboard (Boss) -----
+  async function loadDashboard() {
+    const grid = document.getElementById('dashTruckGrid');
+    const bars = document.getElementById('dashSiteBars');
+    if (!grid) return;
+    const today = todayStr();
+    const { data: vehicles } = await sb.from('vehicles').select('id, registration_number, status').eq('status', 'active').order('registration_number');
+    const { data: shiftRows } = await sb.from('shift_logs').select('vehicle_id, driver_id, logout_time, drivers(name)').eq('shift_date', today);
+    const { data: openTrips } = await sb.from('trips').select('id, vehicle_id, departed_at').is('dumped_at', null);
+    const { data: todayTrips } = await sb.from('trips').select('id, vehicle_id, dumped_at').gte('departed_at', today + 'T00:00:00.000Z');
+
+    const shiftByVehicle = {};
+    (shiftRows || []).forEach(r => { if (!r.logout_time) shiftByVehicle[r.vehicle_id] = r; });
+    const openByVehicle = {};
+    (openTrips || []).forEach(t => { openByVehicle[t.vehicle_id] = t; });
+    const now = Date.now();
+    const NINETY_MIN = 90 * 60 * 1000;
+
+    let outCount = 0, flaggedCount = 0;
+    const cards = (vehicles || []).map(v => {
+      const shift = shiftByVehicle[v.id];
+      const open = openByVehicle[v.id];
+      let cls = 'st-off', pill = 'off', label = 'Not logged in today', meta = '—';
+      if (open) {
+        outCount++;
+        const mins = Math.round((now - new Date(open.departed_at).getTime()) / 60000);
+        const flagged = (now - new Date(open.departed_at).getTime()) > NINETY_MIN;
+        if (flagged) { flaggedCount++; cls = 'st-flagged'; pill = 'flagged'; label = 'Out ' + mins + 'm — flagged'; }
+        else { cls = 'st-working'; pill = 'working'; label = 'Out — departed ' + fmtTime(open.departed_at); }
+        meta = shift && shift.drivers ? shift.drivers.name : 'Driver on file';
+      } else if (shift) {
+        cls = 'st-idle'; pill = 'idle'; label = 'At yard — ready to load';
+        meta = shift.drivers ? shift.drivers.name : 'Driver on file';
+      }
+      return '<button class="truck-card ' + cls + '" data-truck="' + v.id + '"><div class="id">' + v.registration_number + '</div>' +
+        '<span class="status-pill ' + pill + '"><span class="status-dot"></span>' + label + '</span>' +
+        '<div class="truck-meta">' + meta + '</div><div class="tap-hint">Tap for details →</div></button>';
+    });
+    grid.innerHTML = cards.length ? cards.join('') : '<div style="color:var(--text-muted); padding:8px;">No active trucks on file yet — add one in Operations.</div>';
+    grid.querySelectorAll('[data-truck]').forEach(el => el.addEventListener('click', () => openTruckModal(el.dataset.truck)));
+
+    const checkedIn = Object.keys(shiftByVehicle).length + (shiftRows || []).filter(r => r.logout_time).length;
+    const totalActive = (vehicles || []).length;
+    document.getElementById('dashStatOut').textContent = outCount + ' / ' + totalActive;
+    document.getElementById('dashStatOutSub').textContent = (totalActive - outCount) + ' at yard, off, or unlogged';
+    document.getElementById('dashStatTrips').textContent = (todayTrips || []).filter(t => t.dumped_at).length;
+    document.getElementById('dashStatTripsSub').textContent = (todayTrips || []).length + ' departures logged today';
+    document.getElementById('dashStatFlagged').textContent = flaggedCount;
+    document.getElementById('dashStatFlaggedSub').textContent = flaggedCount ? 'trucks out past 90 minutes' : 'none right now';
+    document.getElementById('dashStatCheckedIn').textContent = (shiftRows || []).length + ' / ' + totalActive;
+    document.getElementById('dashStatCheckedInSub').textContent = Math.max(0, totalActive - (shiftRows || []).length) + ' not logged in yet today';
+    document.getElementById('dashGridTitle').textContent = 'Truck status — ' + totalActive + ' active today';
+
+    const doneToday = (todayTrips || []).filter(t => t.dumped_at).length;
+    const pct = doneToday > 0 ? 100 : 0;
+    bars.innerHTML = '<div class="site-bar-row"><span class="name">Loading Site 1</span><div class="site-bar-track"><div class="site-bar-fill" style="width:' + pct + '%;"></div></div><span class="count">' + doneToday + '</span></div>';
+    document.getElementById('dashSiteAnnot').textContent =
+      '"Departed" taps today (' + (todayTrips || []).length + ') should track closely with completed trips (' + doneToday + ') — a big gap between taps and completions is itself a useful signal worth a second look.';
+  }
+
+  // ----- Trip Log (Boss + Manager) -----
+  async function loadTripLog() {
+    const tbody = document.getElementById('tripLogBody');
+    if (!tbody) return;
+    const today = todayStr();
+    const { data, error } = await sb.from('trips')
+      .select('id, departed_at, dumped_at, dumped_at_source, status, vehicles(registration_number), drivers(name)')
+      .gte('departed_at', today + 'T00:00:00.000Z')
+      .order('departed_at', { ascending: false })
+      .limit(100);
+    if (error) { tbody.innerHTML = '<tr><td colspan="6" style="color:var(--status-critical)">Could not load: ' + error.message + '</td></tr>'; return; }
+    if (!data || !data.length) { tbody.innerHTML = '<tr><td colspan="6" style="color:var(--text-muted)">No trips recorded yet today.</td></tr>'; return; }
+    const now = Date.now();
+    tbody.innerHTML = data.map(t => {
+      const dep = new Date(t.departed_at).getTime();
+      const dumped = t.dumped_at ? new Date(t.dumped_at).getTime() : null;
+      const durMin = Math.round(((dumped || now) - dep) / 60000);
+      const flagged = !dumped && durMin > 90;
+      const dumpedCell = dumped
+        ? fmtTime(t.dumped_at) + ' <span style="color:var(--text-muted); font-weight:400;">(' + (t.dumped_at_source === 'estimated' ? 'est. — next departure' : 'GPS') + ')</span>'
+        : '— in progress';
+      const durCell = dumped ? '~' + durMin + 'm' : durMin + 'm so far';
+      const statusCell = flagged
+        ? '<span class="status-pill flagged"><span class="status-dot"></span>Out past normal cycle time — flagged</span>'
+        : dumped
+          ? '<span class="status-pill working"><span class="status-dot"></span>Completed</span>'
+          : '<span class="status-pill idle"><span class="status-dot"></span>In progress</span>';
+      return '<tr><td>' + (t.vehicles ? t.vehicles.registration_number : '—') + '</td><td>' + (t.drivers ? t.drivers.name : '—') + '</td>' +
+        '<td class="num">' + fmtTime(t.departed_at) + '</td><td class="num">' + dumpedCell + '</td>' +
+        '<td class="num">' + durCell + '</td><td>' + statusCell + '</td></tr>';
+    }).join('');
+  }
+
+  // ----- Reports (Boss) -----
+  async function loadReports(days) {
+    const tbody = document.getElementById('reportsBody');
+    if (!tbody) return;
+    tbody.innerHTML = '<tr><td colspan="6" style="color:var(--text-muted)">Loading…</td></tr>';
+    const today = todayStr();
+    const since = new Date(Date.now() - days * 86400000).toISOString();
+    const { data: vehicles, error } = await sb.from('vehicles')
+      .select('id, registration_number, owners(name, owner_type)')
+      .order('registration_number');
+    if (error || !vehicles) { tbody.innerHTML = '<tr><td colspan="6" style="color:var(--status-critical)">Could not load: ' + (error ? error.message : 'unknown error') + '</td></tr>'; return; }
+    const { data: rangeTrips } = await sb.from('trips').select('id, vehicle_id, departed_at, dumped_at').gte('departed_at', since);
+    const { data: todayShift } = await sb.from('shift_logs').select('vehicle_id, drivers(name)').eq('shift_date', today);
+    const currentDriverByVehicle = {};
+    (todayShift || []).forEach(r => { currentDriverByVehicle[r.vehicle_id] = r.drivers ? r.drivers.name : null; });
+
+    const now = Date.now();
+    const byVehicle = {};
+    (rangeTrips || []).forEach(t => {
+      if (!byVehicle[t.vehicle_id]) byVehicle[t.vehicle_id] = { total: 0, today: 0, long: 0 };
+      const b = byVehicle[t.vehicle_id];
+      b.total++;
+      if (t.departed_at >= today + 'T00:00:00.000Z') b.today++;
+      const dep = new Date(t.departed_at).getTime();
+      const end = t.dumped_at ? new Date(t.dumped_at).getTime() : now;
+      if ((end - dep) / 60000 > 90) b.long++;
+    });
+
+    if (!vehicles.length) { tbody.innerHTML = '<tr><td colspan="6" style="color:var(--text-muted)">No trucks on file yet.</td></tr>'; return; }
+    tbody.innerHTML = vehicles.map(v => {
+      const b = byVehicle[v.id] || { total: 0, today: 0, long: 0 };
+      const owner = v.owners ? v.owners.name + (v.owners.owner_type === 'third_party' ? ' (third-party)' : ' (driver-owned)') : '—';
+      const driver = currentDriverByVehicle[v.id] || '— not logged in today —';
+      return '<tr><td><button class="truck-link" data-truck="' + v.id + '">' + v.registration_number + '</button></td>' +
+        '<td>' + driver + '</td><td>' + owner + '</td>' +
+        '<td class="num">' + b.today + '</td><td class="num">' + b.total + '</td><td class="num">' + b.long + '</td></tr>';
+    }).join('');
+    tbody.querySelectorAll('[data-truck]').forEach(el => el.addEventListener('click', () => openTruckModal(el.dataset.truck)));
+  }
+
+  document.querySelectorAll('#reportsFilterRow .filter-pill').forEach(p => {
     p.addEventListener('click', () => {
-      p.parentElement.querySelectorAll('.filter-pill').forEach(x => x.classList.remove('active'));
+      document.querySelectorAll('#reportsFilterRow .filter-pill').forEach(x => x.classList.remove('active'));
       p.classList.add('active');
+      const days = parseInt(p.dataset.range, 10);
+      document.getElementById('reportsTitle').textContent =
+        'Trips per truck — ' + (days === 1 ? 'today' : 'last ' + days + ' days');
+      loadReports(days);
     });
   });
 </script>
@@ -1126,8 +1188,9 @@
     renderUserChip();
     applyRole(currentUser.role);
     showApp();
-    if (currentUser.role === 'boss') loadSettingsData();
-    if (currentUser.role === 'manager') { loadChallanList(); loadFleetRoster(); }
+    if (currentUser.role === 'boss') { loadSettingsData(); loadDashboard(); loadReports(7); }
+    if (currentUser.role === 'manager') { loadChallanList(); loadFleetRoster(); loadShiftFormOptions(); loadShiftLog(); loadTripTracking(); }
+    loadTripLog();
   }
 
   document.getElementById('loginForm').addEventListener('submit', async (e) => {
