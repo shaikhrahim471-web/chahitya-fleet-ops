@@ -179,6 +179,12 @@
   .stat-tile.accent-good { border-left-color: var(--status-good); }
   .stat-tile.accent-critical { border-left-color: var(--status-critical); }
   .stat-tile.accent-blue { border-left-color: var(--series-1); }
+  button.stat-tile-clickable {
+    appearance: none; font-family: inherit; text-align: left; cursor: pointer; width: 100%;
+  }
+  button.stat-tile-clickable:hover { border-left-width: 3px; }
+  button.stat-tile-clickable .tap-hint { opacity: 0; transition: opacity 0.12s ease; }
+  button.stat-tile-clickable:hover .tap-hint { opacity: 1; }
   .stat-label { font-size: 11.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.03em; color: var(--text-muted); margin-bottom: 8px; }
   .stat-value { font-size: 28px; font-weight: 700; line-height: 1; letter-spacing: -0.01em; }
   .stat-value.good { color: var(--status-good); }
@@ -640,26 +646,30 @@
         <p class="page-sub">What the bosses see first — today, at a glance.</p>
 
         <div class="stat-row" id="dashStatRow">
-          <div class="stat-tile accent-good">
+          <button type="button" class="stat-tile accent-good stat-tile-clickable" data-stat="out">
             <div class="stat-label">Tankers active now</div>
             <div class="stat-value good" id="dashStatOut">—</div>
             <div class="stat-delta" id="dashStatOutSub">Loading…</div>
-          </div>
-          <div class="stat-tile accent-blue">
+            <div class="tap-hint">Tap for details →</div>
+          </button>
+          <button type="button" class="stat-tile accent-blue stat-tile-clickable" data-stat="trips">
             <div class="stat-label">Trips completed today</div>
             <div class="stat-value" id="dashStatTrips">—</div>
             <div class="stat-delta" id="dashStatTripsSub">Loading…</div>
-          </div>
-          <div class="stat-tile accent-critical">
+            <div class="tap-hint">Tap for details →</div>
+          </button>
+          <button type="button" class="stat-tile accent-critical stat-tile-clickable" data-stat="flagged">
             <div class="stat-label">Flagged (out &gt;90 min)</div>
             <div class="stat-value" style="color:var(--status-critical)" id="dashStatFlagged">—</div>
             <div class="stat-delta" id="dashStatFlaggedSub">Loading…</div>
-          </div>
-          <div class="stat-tile">
+            <div class="tap-hint">Tap for details →</div>
+          </button>
+          <button type="button" class="stat-tile stat-tile-clickable" data-stat="checkedin">
             <div class="stat-label">Drivers checked in</div>
             <div class="stat-value" id="dashStatCheckedIn">—</div>
             <div class="stat-delta" id="dashStatCheckedInSub">Loading…</div>
-          </div>
+            <div class="tap-hint">Tap for details →</div>
+          </button>
         </div>
 
         <div class="two-col">
@@ -1070,6 +1080,21 @@
   </div>
 </div>
 
+<div class="modal-overlay" id="dashDrillModal">
+  <div class="modal-card" style="max-width:560px;">
+    <div class="modal-head">
+      <div class="modal-head-inner">
+        <div>
+          <div class="veh-num" id="dashDrillTitle">—</div>
+          <div class="veh-sub" id="dashDrillSub">—</div>
+        </div>
+      </div>
+      <button class="modal-close" id="dashDrillClose">✕</button>
+    </div>
+    <div class="modal-body" id="dashDrillBody"></div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="challanUploadModal">
   <div class="modal-card" style="max-width:420px;">
     <div class="modal-head">
@@ -1175,15 +1200,17 @@
   });
 
   // ----- Dashboard (Boss) -----
+  let dashDrillData = { out: [], notOut: [], completed: [], inProgress: [], flagged: [], checkedIn: [], notCheckedIn: [] };
+
   async function loadDashboard() {
     const grid = document.getElementById('dashTruckGrid');
     const bars = document.getElementById('dashSiteBars');
     if (!grid) return;
     const today = todayStr();
     const { data: vehicles } = await sb.from('vehicles').select('id, registration_number, status').eq('status', 'active').order('registration_number');
-    const { data: shiftRows } = await sb.from('shift_logs').select('vehicle_id, driver_id, logout_time, drivers(name)').eq('shift_date', today);
+    const { data: shiftRows } = await sb.from('shift_logs').select('vehicle_id, driver_id, login_time, logout_time, drivers(name)').eq('shift_date', today);
     const { data: openTrips } = await sb.from('trips').select('id, vehicle_id, departed_at').is('dumped_at', null);
-    const { data: todayTrips } = await sb.from('trips').select('id, vehicle_id, dumped_at').gte('departed_at', today + 'T00:00:00.000Z');
+    const { data: todayTrips } = await sb.from('trips').select('id, vehicle_id, driver_id, departed_at, dumped_at, dumped_at_source, drivers(name)').gte('departed_at', today + 'T00:00:00.000Z');
 
     const shiftByVehicle = {};
     (shiftRows || []).forEach(r => { if (!r.logout_time) shiftByVehicle[r.vehicle_id] = r; });
@@ -1193,10 +1220,12 @@
     const NINETY_MIN = 90 * 60 * 1000;
 
     let outCount = 0, flaggedCount = 0;
+    dashDrillData = { out: [], notOut: [], completed: [], inProgress: [], flagged: [], checkedIn: [], notCheckedIn: [] };
     const cards = (vehicles || []).map(v => {
       const shift = shiftByVehicle[v.id];
       const open = openByVehicle[v.id];
       let cls = 'st-off', pill = 'off', label = 'Not logged in today', meta = '—';
+      const driverName = shift && shift.drivers ? shift.drivers.name : null;
       if (open) {
         outCount++;
         const mins = Math.round((now - new Date(open.departed_at).getTime()) / 60000);
@@ -1204,9 +1233,20 @@
         if (flagged) { flaggedCount++; cls = 'st-flagged'; pill = 'flagged'; label = 'Out ' + mins + 'm — flagged'; }
         else { cls = 'st-working'; pill = 'working'; label = 'Out — departed ' + fmtTime(open.departed_at); }
         meta = shift && shift.drivers ? shift.drivers.name : 'Driver on file';
+        const rec = { reg: v.registration_number, driver: driverName || 'Driver on file', departed: open.departed_at, mins };
+        dashDrillData.out.push(rec);
+        if (flagged) dashDrillData.flagged.push(rec);
       } else if (shift) {
         cls = 'st-idle'; pill = 'idle'; label = 'At yard — ready to load';
         meta = shift.drivers ? shift.drivers.name : 'Driver on file';
+        dashDrillData.notOut.push({ reg: v.registration_number, state: 'At yard — ready to load', driver: driverName });
+      } else {
+        dashDrillData.notOut.push({ reg: v.registration_number, state: 'Not logged in today', driver: null });
+      }
+      if (shift) {
+        dashDrillData.checkedIn.push({ reg: v.registration_number, driver: driverName || '—', login: shift.login_time || null });
+      } else {
+        dashDrillData.notCheckedIn.push({ reg: v.registration_number });
       }
       return '<button class="truck-card ' + cls + '" data-truck="' + v.id + '"><div class="id">' + v.registration_number + '</div>' +
         '<span class="status-pill ' + pill + '"><span class="status-dot"></span>' + label + '</span>' +
@@ -1214,6 +1254,18 @@
     });
     grid.innerHTML = cards.length ? cards.join('') : '<div style="color:var(--text-muted); padding:8px;">No active tankers on file yet — add one in Operations.</div>';
     grid.querySelectorAll('[data-truck]').forEach(el => el.addEventListener('click', () => openTruckModal(el.dataset.truck)));
+
+    (todayTrips || []).forEach(t => {
+      const vLabel = (vehicles || []).find(v => v.id === t.vehicle_id);
+      const rec = {
+        reg: vLabel ? vLabel.registration_number : '—',
+        driver: t.drivers ? t.drivers.name : '—',
+        departed: t.departed_at,
+        dumped: t.dumped_at,
+        dumpedSource: t.dumped_at_source,
+      };
+      if (t.dumped_at) dashDrillData.completed.push(rec); else dashDrillData.inProgress.push(rec);
+    });
 
     const checkedIn = Object.keys(shiftByVehicle).length + (shiftRows || []).filter(r => r.logout_time).length;
     const totalActive = (vehicles || []).length;
@@ -1233,6 +1285,80 @@
     document.getElementById('dashSiteAnnot').textContent =
       '"Departed" taps today (' + (todayTrips || []).length + ') should track closely with completed trips (' + doneToday + ') — a big gap between taps and completions is itself a useful signal worth a second look.';
   }
+
+  // ----- Dashboard stat-tile drill-down modal -----
+  function dashDrillTable(headers, rows, emptyText) {
+    if (!rows.length) return '<div style="color:var(--text-muted); font-size:12.5px; padding:4px 0 2px;">' + emptyText + '</div>';
+    return '<table class="history-table"><thead><tr>' + headers.map(h => '<th>' + h + '</th>').join('') + '</tr></thead><tbody>' +
+      rows.join('') + '</tbody></table>';
+  }
+
+  function openDashDrillModal(kind) {
+    const titleEl = document.getElementById('dashDrillTitle');
+    const subEl = document.getElementById('dashDrillSub');
+    const body = document.getElementById('dashDrillBody');
+    let html = '';
+
+    if (kind === 'out') {
+      titleEl.textContent = 'Tankers active now';
+      subEl.textContent = dashDrillData.out.length + ' out on a trip, ' + dashDrillData.notOut.length + ' not out';
+      html += '<div class="modal-section"><div class="modal-section-title">Out on a trip now</div>' +
+        dashDrillTable(['Tanker', 'Driver', 'Departed', 'Time out'],
+          dashDrillData.out.slice().sort((a, b) => b.mins - a.mins).map(r =>
+            '<tr><td>' + r.reg + '</td><td>' + r.driver + '</td><td class="num">' + fmtTime(r.departed) + '</td><td class="num">' + r.mins + 'm</td></tr>'),
+          'No tankers are out on a trip right now.') + '</div>' +
+        '<div class="modal-section"><div class="modal-section-title">Not out (at yard, off, or unlogged)</div>' +
+        dashDrillTable(['Tanker', 'Status', 'Driver'],
+          dashDrillData.notOut.map(r => '<tr><td>' + r.reg + '</td><td>' + r.state + '</td><td>' + (r.driver || '—') + '</td></tr>'),
+          'Every active tanker is out right now.') + '</div>';
+    } else if (kind === 'trips') {
+      titleEl.textContent = 'Trips today';
+      subEl.textContent = dashDrillData.completed.length + ' completed, ' + dashDrillData.inProgress.length + ' still in progress';
+      html += '<div class="modal-section"><div class="modal-section-title">Completed</div>' +
+        dashDrillTable(['Tanker', 'Driver', 'Departed', 'Dumped'],
+          dashDrillData.completed.map(r => '<tr><td>' + r.reg + '</td><td>' + r.driver + '</td><td class="num">' + fmtTime(r.departed) + '</td><td class="num">' + fmtTime(r.dumped) + (r.dumpedSource === 'estimated' ? ' (est.)' : '') + '</td></tr>'),
+          'No trips completed yet today.') + '</div>' +
+        '<div class="modal-section"><div class="modal-section-title">Still in progress</div>' +
+        dashDrillTable(['Tanker', 'Driver', 'Departed'],
+          dashDrillData.inProgress.map(r => '<tr><td>' + r.reg + '</td><td>' + r.driver + '</td><td class="num">' + fmtTime(r.departed) + '</td></tr>'),
+          'Nothing in progress — every departure today has a dump recorded.') + '</div>';
+    } else if (kind === 'flagged') {
+      titleEl.textContent = 'Flagged — out past normal cycle time';
+      subEl.textContent = dashDrillData.flagged.length ? dashDrillData.flagged.length + ' tanker(s) need a check' : 'None right now';
+      html += '<div class="modal-section" style="font-size:12.5px; color:var(--text-secondary); line-height:1.6;">' +
+        'A tanker is flagged when it has been out with a load for more than 90 minutes without a dump recorded yet. Since the dump time is only inferred from the tanker\'s next departure, we can\'t confirm it actually finished — this usually means it\'s still en route, waiting at the dump ground, broken down, or the manager forgot to tap "Mark departed" again after it came back. Worth a call to check.' +
+        '</div>' +
+        '<div class="modal-section"><div class="modal-section-title">Flagged tankers</div>' +
+        dashDrillTable(['Tanker', 'Driver', 'Departed', 'Time out'],
+          dashDrillData.flagged.slice().sort((a, b) => b.mins - a.mins).map(r =>
+            '<tr><td>' + r.reg + '</td><td>' + r.driver + '</td><td class="num">' + fmtTime(r.departed) + '</td><td class="num">' + r.mins + 'm</td></tr>'),
+          'No tankers are flagged right now.') + '</div>';
+    } else if (kind === 'checkedin') {
+      titleEl.textContent = 'Drivers checked in';
+      subEl.textContent = dashDrillData.checkedIn.length + ' checked in, ' + dashDrillData.notCheckedIn.length + ' not logged in yet';
+      html += '<div class="modal-section"><div class="modal-section-title">Checked in today</div>' +
+        dashDrillTable(['Tanker', 'Driver', 'Login time'],
+          dashDrillData.checkedIn.map(r => '<tr><td>' + r.reg + '</td><td>' + r.driver + '</td><td class="num">' + (r.login ? fmtTime(r.login) : '—') + '</td></tr>'),
+          'No tankers checked in yet today.') + '</div>' +
+        '<div class="modal-section"><div class="modal-section-title">Not logged in yet</div>' +
+        dashDrillTable(['Tanker'],
+          dashDrillData.notCheckedIn.map(r => '<tr><td>' + r.reg + '</td></tr>'),
+          'Every active tanker is checked in today.') + '</div>';
+    }
+
+    body.innerHTML = html;
+    document.getElementById('dashDrillModal').classList.add('open');
+  }
+  function closeDashDrillModal() {
+    document.getElementById('dashDrillModal').classList.remove('open');
+  }
+  document.getElementById('dashDrillClose')?.addEventListener('click', closeDashDrillModal);
+  document.getElementById('dashDrillModal')?.addEventListener('click', (e) => {
+    if (e.target.id === 'dashDrillModal') closeDashDrillModal();
+  });
+  document.querySelectorAll('#dashStatRow [data-stat]').forEach(el => {
+    el.addEventListener('click', () => openDashDrillModal(el.dataset.stat));
+  });
 
   // ----- Trip Log (Boss + Manager) — filterable so a 50-60 trip day doesn't mean endless scrolling -----
   async function loadTripLogFilterOptions() {
