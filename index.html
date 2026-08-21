@@ -430,6 +430,19 @@
   .challan-row { display: flex; align-items: center; justify-content: space-between; font-size: 12px; padding: 8px 10px; background: var(--page-plane); border-radius: var(--radius-sm); }
   .challan-row a { color: var(--series-1); font-weight: 600; text-decoration: none; }
   .challan-row a:hover { text-decoration: underline; }
+
+  /* ===== Add truck form ===== */
+  .add-truck-form {
+    background: var(--page-plane); border: 1px solid var(--border); border-radius: var(--radius-md);
+    padding: 16px 18px; margin-bottom: 18px;
+  }
+  .add-truck-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 14px; margin-bottom: 12px; }
+  .add-truck-grid.full { grid-template-columns: 1fr; }
+  .add-truck-field label { display: block; font-size: 11px; font-weight: 600; color: var(--text-secondary); margin-bottom: 5px; }
+  .add-truck-field input, .add-truck-field select {
+    width: 100%; font: inherit; font-size: 12.5px; padding: 8px 10px;
+    border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface-1);
+  }
 </style>
 </head>
 <body>
@@ -653,11 +666,50 @@
 
         <div class="panel">
           <div class="panel-title">Fleet roster</div>
-          <div class="panel-sub">The fleet isn't fixed at 19 — trucks get added when a new one joins (own or contracted) and retired when one leaves. Every screen in this system (Dashboard grid, Reports table, Trip Log) reads from this roster, so it grows or shrinks with one edit here, nothing rebuilt elsewhere.</div>
-          <div style="display:flex; gap:12px; align-items:center;">
-            <button class="btn-primary">+ Add truck</button>
-            <span class="annot" style="border-top:none; padding-top:0; margin-top:0;">19 active · 1 retired this year (mock)</span>
+          <div class="panel-sub">Real — this is live now. Add a truck once here and it's on file everywhere else in the system (shift log, trip tracking, and eventually the dashboard) automatically.</div>
+          <div style="display:flex; gap:12px; align-items:center; margin-bottom:16px;">
+            <button class="btn-primary" id="addTruckBtn" type="button">+ Add truck</button>
+            <span class="annot" id="fleetRosterCount" style="border-top:none; padding-top:0; margin-top:0;">Loading…</span>
           </div>
+
+          <form class="add-truck-form" id="addTruckForm" style="display:none;">
+            <div class="add-truck-grid">
+              <div class="add-truck-field">
+                <label for="truckReg">Registration number</label>
+                <input type="text" id="truckReg" placeholder="e.g. MH12 AB 1234" required>
+              </div>
+              <div class="add-truck-field">
+                <label for="truckType">Vehicle type</label>
+                <input type="text" id="truckType" placeholder="tanker" value="tanker">
+              </div>
+              <div class="add-truck-field">
+                <label for="truckWheeler">Wheeler / axle class (optional)</label>
+                <input type="text" id="truckWheeler" placeholder="e.g. 10-wheeler">
+              </div>
+              <div class="add-truck-field">
+                <label for="ownerType">Owner type</label>
+                <select id="ownerType">
+                  <option value="driver_owned">Driver-owned</option>
+                  <option value="third_party">Third-party company</option>
+                </select>
+              </div>
+              <div class="add-truck-field">
+                <label for="ownerName">Owner name</label>
+                <input type="text" id="ownerName" placeholder="e.g. Ramesh K. or Balaji Tankers Pvt Ltd" required>
+              </div>
+              <div class="add-truck-field">
+                <label for="ownerPhone">Owner phone (optional)</label>
+                <input type="text" id="ownerPhone" placeholder="+91 ...">
+              </div>
+            </div>
+            <button type="submit" class="btn-primary" id="addTruckSubmit">Save truck</button>
+            <div class="upload-status" id="addTruckStatus"></div>
+          </form>
+
+          <table class="data-table" id="fleetRosterTable">
+            <thead><tr><th>Reg. number</th><th>Type</th><th>Owner</th><th>Status</th></tr></thead>
+            <tbody id="fleetRosterBody"><tr><td colspan="4" style="color:var(--text-muted)">Loading…</td></tr></tbody>
+          </table>
         </div>
       </section>
 
@@ -1058,7 +1110,7 @@
     applyRole(currentUser.role);
     showApp();
     if (currentUser.role === 'boss') loadSettingsData();
-    if (currentUser.role === 'manager') loadChallanList();
+    if (currentUser.role === 'manager') { loadChallanList(); loadFleetRoster(); }
   }
 
   document.getElementById('loginForm').addEventListener('submit', async (e) => {
@@ -1189,6 +1241,82 @@
       statusEl.className = 'upload-status ok';
       challanForm.reset();
       loadChallanList();
+    });
+  }
+
+  // ----- Fleet roster (Manager) -----
+  async function loadFleetRoster() {
+    const tbody = document.getElementById('fleetRosterBody');
+    const countEl = document.getElementById('fleetRosterCount');
+    if (!tbody) return;
+    const { data, error } = await sb.from('vehicles')
+      .select('id, registration_number, vehicle_type, wheeler_class, status, owners(name, owner_type)')
+      .order('created_at', { ascending: false });
+    if (error || !data) {
+      tbody.innerHTML = '<tr><td colspan="4" style="color:var(--status-critical)">Could not load the roster: ' + (error ? error.message : 'unknown error') + '</td></tr>';
+      if (countEl) countEl.textContent = '—';
+      return;
+    }
+    if (!data.length) {
+      tbody.innerHTML = '<tr><td colspan="4" style="color:var(--text-muted)">No trucks on file yet — use "+ Add truck" above to add the first one.</td></tr>';
+    } else {
+      tbody.innerHTML = data.map(v => {
+        const owner = v.owners
+          ? v.owners.name + ' <span class="owner-badge ' + (v.owners.owner_type === 'third_party' ? 'third-party">Third-party' : 'driver-owned">Driver-owned') + '</span>'
+          : '—';
+        return '<tr><td>' + v.registration_number + '</td><td>' + (v.wheeler_class ? v.vehicle_type + ' · ' + v.wheeler_class : v.vehicle_type) + '</td><td>' + owner + '</td><td><span class="toggle-btn ' + (v.status === 'active' ? 'on">In service' : 'off">' + v.status) + '</span></td></tr>';
+      }).join('');
+    }
+    if (countEl) {
+      const active = data.filter(v => v.status === 'active').length;
+      countEl.textContent = active + ' active · ' + (data.length - active) + ' inactive/retired · ' + data.length + ' total';
+    }
+  }
+
+  const addTruckBtn = document.getElementById('addTruckBtn');
+  if (addTruckBtn) {
+    addTruckBtn.addEventListener('click', () => {
+      const f = document.getElementById('addTruckForm');
+      f.style.display = f.style.display === 'none' ? 'block' : 'none';
+    });
+  }
+
+  const addTruckForm = document.getElementById('addTruckForm');
+  if (addTruckForm) {
+    addTruckForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const reg = document.getElementById('truckReg').value.trim();
+      const vtype = document.getElementById('truckType').value.trim() || 'tanker';
+      const wheeler = document.getElementById('truckWheeler').value.trim();
+      const ownerType = document.getElementById('ownerType').value;
+      const ownerName = document.getElementById('ownerName').value.trim();
+      const ownerPhone = document.getElementById('ownerPhone').value.trim();
+      const statusEl = document.getElementById('addTruckStatus');
+      const submitBtn = document.getElementById('addTruckSubmit');
+      if (!reg || !ownerName) return;
+      submitBtn.disabled = true; submitBtn.textContent = 'Adding…';
+      statusEl.textContent = ''; statusEl.className = 'upload-status';
+      try {
+        const { data: ownerRow, error: ownerErr } = await sb.from('owners')
+          .insert({ name: ownerName, phone: ownerPhone || null, owner_type: ownerType })
+          .select('id').single();
+        if (ownerErr) throw ownerErr;
+        const { error: vehErr } = await sb.from('vehicles').insert({
+          registration_number: reg, vehicle_type: vtype, wheeler_class: wheeler || null,
+          owner_id: ownerRow.id, status: 'active'
+        });
+        if (vehErr) throw vehErr;
+        statusEl.textContent = 'Truck added to the roster.';
+        statusEl.className = 'upload-status ok';
+        addTruckForm.reset();
+        document.getElementById('truckType').value = 'tanker';
+        addTruckForm.style.display = 'none';
+        loadFleetRoster();
+      } catch (err) {
+        statusEl.textContent = 'Could not add truck: ' + (err.message || 'unknown error') + (err.message && err.message.includes('row-level security') ? ' — only Manager accounts can add trucks.' : '');
+        statusEl.className = 'upload-status err';
+      }
+      submitBtn.disabled = false; submitBtn.textContent = 'Save truck';
     });
   }
 
