@@ -497,10 +497,6 @@
   }
   .user-chip .role-badge.boss { background: rgba(42,120,214,0.12); color: var(--series-1); }
   .user-chip .role-badge.manager { background: rgba(27,175,122,0.14); color: #0d7a53; }
-  .avatar-circle {
-    width: 32px; height: 32px; border-radius: 999px; background: var(--page-plane); border: 1px solid var(--border);
-    display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: var(--text-secondary);
-  }
   .btn-ghost-sm {
     font: inherit; font-size: 11.5px; font-weight: 600; padding: 6px 11px; cursor: pointer;
     border-radius: 999px; border: 1px solid var(--border); background: var(--surface-1); color: var(--text-secondary);
@@ -520,7 +516,7 @@
     background: var(--status-critical); border: 1.5px solid var(--surface-1);
   }
   .notif-panel {
-    display: none; position: absolute; top: calc(100% + 8px); right: 0; width: 320px; max-width: calc(100vw - 24px);
+    display: none; position: fixed; right: 16px; width: 320px; max-width: calc(100vw - 32px);
     max-height: 380px; overflow-y: auto; background: var(--surface-1); border: 1px solid var(--border);
     border-radius: var(--radius-md); box-shadow: var(--shadow-2); z-index: 40; padding: 4px 0;
   }
@@ -685,7 +681,6 @@
           <div class="name" id="userName">—</div>
           <span class="role-badge boss" id="userRoleBadge">—</span>
         </div>
-        <div class="avatar-circle" id="userAvatar">—</div>
         <div class="notif-wrap">
           <button class="notif-bell" id="notifBellBtn" type="button" aria-label="Notifications">
             🔔
@@ -1735,8 +1730,6 @@
     const badge = document.getElementById('userRoleBadge');
     badge.textContent = currentUser.role === 'manager' ? 'Manager' : 'Director';
     badge.className = 'role-badge ' + (currentUser.role === 'manager' ? 'manager' : 'boss');
-    const initials = (currentUser.name || currentUser.email || '?').trim().split(/\s+/).map(s => s[0]).slice(0,2).join('').toUpperCase();
-    document.getElementById('userAvatar').textContent = initials;
   }
 
   async function initSession() {
@@ -1854,6 +1847,7 @@
       e.stopPropagation();
       const opening = !notifPanel.classList.contains('open');
       if (!opening) { notifPanel.classList.remove('open'); return; }
+      notifPanel.style.top = (document.querySelector('.topbar').getBoundingClientRect().bottom + 8) + 'px';
       notifPanel.classList.add('open');
       document.getElementById('notifList').innerHTML = '<div class="notif-empty">Loading…</div>';
       const items = await fetchNotificationItems();
