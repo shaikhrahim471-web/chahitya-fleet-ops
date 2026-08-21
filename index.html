@@ -272,6 +272,14 @@
     transition: box-shadow 0.15s ease, transform 0.1s ease;
   }
   .btn-primary:hover { box-shadow: 0 4px 12px rgba(42,120,214,0.45); transform: translateY(-1px); }
+  .btn-secondary {
+    font: inherit; font-size: 12px; font-weight: 600; padding: 6px 13px;
+    border-radius: 999px; border: 1px solid var(--border); cursor: pointer;
+    background: #fff; color: var(--text-primary);
+  }
+  .btn-secondary:hover { background: var(--page-plane); }
+  .doc-slot { padding: 12px 0; border-bottom: 1px dashed var(--gridline); }
+  .doc-slot:last-child { border-bottom: none; }
 
   .annot {
     font-size: 11.5px; color: var(--text-muted); margin-top: 10px;
@@ -688,25 +696,22 @@
           <div class="panel-sub">Real — this is live now. The manager taps "Mark departed" each time a tanker pulls out of the loading site with a load. That single tap timestamps this trip's start <em>and</em> closes out the tanker's previous trip (it's back, so it must have finished its last run). Needs the tanker logged into today's shift log first, so there's a driver to attribute the trip to.</div>
           <table class="data-table">
             <thead>
-              <tr><th>Tanker</th><th>Current trip status</th><th>Trips today</th><th>Action</th></tr>
+              <tr><th>Tanker</th><th>Current trip status</th><th>Trips today</th><th>Challan</th><th>Action</th></tr>
             </thead>
-            <tbody id="tripTrackingBody"><tr><td colspan="4" style="color:var(--text-muted)">Loading…</td></tr></tbody>
+            <tbody id="tripTrackingBody"><tr><td colspan="5" style="color:var(--text-muted)">Loading…</td></tr></tbody>
           </table>
           <div class="annot" id="tripTrackingStatus">Tankers logged into today's shift log appear here. Trips are tagged to a single active loading site, created automatically the first time this is used.</div>
         </div>
 
         <div class="panel">
-          <div class="panel-title">Upload challan</div>
-          <div class="panel-sub">Snap a photo of the challan and upload it as-is — full size, no need to resize or compress it yourself. That's handled automatically in the background.</div>
-          <form id="challanForm">
-            <div class="upload-row">
-              <input type="file" id="challanFile" accept="image/*,.pdf" required>
-              <input type="text" id="challanNote" placeholder="Optional note (tanker #, trip, etc.)">
-              <button type="submit" class="btn-primary" id="challanSubmit">Upload</button>
-            </div>
-          </form>
-          <div class="upload-status" id="challanStatus"></div>
-          <div class="challan-list" id="challanList"></div>
+          <div class="panel-title">Challans due</div>
+          <div class="panel-sub">Real — this is live now. Every completed trip needs its challan attached here, tied directly to that trip — tap "Attach challan" for whichever tanker's paperwork you're holding, whether that's right after it returns or in a batch at the end of the day.</div>
+          <table class="data-table">
+            <thead>
+              <tr><th>Tanker</th><th>Driver</th><th>Departed</th><th>Action</th></tr>
+            </thead>
+            <tbody id="challansDueBody"><tr><td colspan="4" style="color:var(--text-muted)">Loading…</td></tr></tbody>
+          </table>
         </div>
 
         <div class="panel">
@@ -756,8 +761,17 @@
           </form>
 
           <table class="data-table" id="fleetRosterTable">
-            <thead><tr><th>Reg. number</th><th>Type</th><th>Capacity (KL)</th><th>Owner</th><th>Status</th></tr></thead>
-            <tbody id="fleetRosterBody"><tr><td colspan="5" style="color:var(--text-muted)">Loading…</td></tr></tbody>
+            <thead><tr><th>Reg. number</th><th>Type</th><th>Capacity (KL)</th><th>Owner</th><th>Status</th><th>Documents</th></tr></thead>
+            <tbody id="fleetRosterBody"><tr><td colspan="6" style="color:var(--text-muted)">Loading…</td></tr></tbody>
+          </table>
+        </div>
+
+        <div class="panel">
+          <div class="panel-title">Drivers</div>
+          <div class="panel-sub">Real — this is live now. Aadhar card and driving license are stored once per driver here and stay on file even as they move between tankers — no need to re-upload.</div>
+          <table class="data-table" id="driversTable">
+            <thead><tr><th>Name</th><th>Documents</th></tr></thead>
+            <tbody id="driversBody"><tr><td colspan="2" style="color:var(--text-muted)">Loading…</td></tr></tbody>
           </table>
         </div>
       </section>
@@ -943,6 +957,49 @@
       </div>
 
     </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="challanUploadModal">
+  <div class="modal-card" style="max-width:420px;">
+    <div class="modal-head">
+      <div class="modal-head-inner">
+        <div>
+          <div class="veh-num" id="challanModalTitle">—</div>
+          <div class="veh-sub" id="challanModalSub">Attach challan to this trip</div>
+        </div>
+      </div>
+      <button class="modal-close" id="challanModalClose">✕</button>
+    </div>
+    <div class="modal-body">
+      <form id="challanUploadForm">
+        <div class="add-truck-field" style="margin-bottom:12px;">
+          <label for="challanUploadFile">Challan photo</label>
+          <input type="file" id="challanUploadFile" accept="image/*,.pdf" required>
+        </div>
+        <div class="add-truck-field" style="margin-bottom:14px;">
+          <label for="challanUploadNote">Note (optional)</label>
+          <input type="text" id="challanUploadNote" placeholder="e.g. challan number">
+        </div>
+        <button type="submit" class="btn-primary" id="challanUploadSubmit">Save challan</button>
+        <div class="upload-status" id="challanUploadStatus"></div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="docsModal">
+  <div class="modal-card" style="max-width:460px;">
+    <div class="modal-head">
+      <div class="modal-head-inner">
+        <div>
+          <div class="veh-num" id="docsModalTitle">—</div>
+          <div class="veh-sub">Documents on file</div>
+        </div>
+      </div>
+      <button class="modal-close" id="docsModalClose">✕</button>
+    </div>
+    <div class="modal-body" id="docsModalBody"></div>
   </div>
 </div>
 
@@ -1243,7 +1300,7 @@
     applyRole(currentUser.role);
     showApp();
     if (currentUser.role === 'boss') { loadSettingsData(); loadDashboard(); loadReports(7); }
-    if (currentUser.role === 'manager') { loadChallanList(); loadFleetRoster(); loadShiftFormOptions(); loadShiftLog(); loadTripTracking(); }
+    if (currentUser.role === 'manager') { loadFleetRoster(); loadDrivers(); loadShiftFormOptions(); loadShiftLog(); loadTripTracking(); }
     loadTripLog();
   }
 
@@ -1331,27 +1388,59 @@
     document.getElementById('settingsKebabMenu').classList.remove('open');
   });
 
-  // ----- Challan upload (Manager) -----
-  async function loadChallanList() {
-    const list = document.getElementById('challanList');
-    if (!list) return;
-    const { data } = await sb.from('challans').select('id, file_path, uploaded_at').order('uploaded_at', { ascending: false }).limit(5);
-    if (!data || !data.length) { list.innerHTML = ''; return; }
-    list.innerHTML = data.map(c =>
-      `<div class="challan-row"><span>${fmtWhen(c.uploaded_at)}</span><span>${c.file_path.split('/').pop()}</span></div>`
-    ).join('');
+  // ----- Challans due (Manager) — every completed trip needs its challan tied to it -----
+  async function loadChallanDueTrips() {
+    const since = new Date(Date.now() - 30 * 86400000).toISOString();
+    const { data: completedTrips } = await sb.from('trips')
+      .select('id, vehicle_id, driver_id, departed_at, vehicles(registration_number), drivers(name)')
+      .eq('status', 'completed').gte('departed_at', since).order('departed_at', { ascending: true });
+    const { data: existingChallans } = await sb.from('challans').select('trip_id').not('trip_id', 'is', null);
+    const linked = new Set((existingChallans || []).map(c => c.trip_id));
+    return (completedTrips || []).filter(t => !linked.has(t.id));
   }
 
-  const challanForm = document.getElementById('challanForm');
-  if (challanForm) {
-    challanForm.addEventListener('submit', async (e) => {
+  function renderChallansDue(missing) {
+    const dueBody = document.getElementById('challansDueBody');
+    if (!dueBody) return;
+    dueBody.innerHTML = missing.length ? missing.map(t =>
+      '<tr><td>' + (t.vehicles ? t.vehicles.registration_number : '—') + '</td>' +
+      '<td>' + (t.drivers ? t.drivers.name : '—') + '</td>' +
+      '<td class="num">' + fmtWhen(t.departed_at) + '</td>' +
+      '<td><button class="btn-primary" data-attach-challan="' + t.id + '" data-veh="' + (t.vehicles ? t.vehicles.registration_number : '') + '" type="button">Attach challan</button></td></tr>'
+    ).join('') : '<tr><td colspan="4" style="color:var(--text-muted)">Nothing outstanding — every completed trip in the last 30 days has its challan attached.</td></tr>';
+    dueBody.querySelectorAll('[data-attach-challan]').forEach(btn => {
+      btn.addEventListener('click', () => openChallanUploadModal(btn.dataset.attachChallan, btn.dataset.veh));
+    });
+  }
+
+  let currentChallanTrip = null; // { id, vehicleId }
+  function openChallanUploadModal(tripId, vehLabel) {
+    currentChallanTrip = { id: tripId };
+    document.getElementById('challanModalTitle').textContent = vehLabel || 'Attach challan';
+    document.getElementById('challanUploadForm').reset();
+    document.getElementById('challanUploadStatus').textContent = '';
+    document.getElementById('challanUploadStatus').className = 'upload-status';
+    document.getElementById('challanUploadModal').classList.add('open');
+  }
+  function closeChallanUploadModal() {
+    document.getElementById('challanUploadModal').classList.remove('open');
+    currentChallanTrip = null;
+  }
+  document.getElementById('challanModalClose')?.addEventListener('click', closeChallanUploadModal);
+  document.getElementById('challanUploadModal')?.addEventListener('click', (e) => {
+    if (e.target.id === 'challanUploadModal') closeChallanUploadModal();
+  });
+
+  const challanUploadForm = document.getElementById('challanUploadForm');
+  if (challanUploadForm) {
+    challanUploadForm.addEventListener('submit', async (e) => {
       e.preventDefault();
-      const fileInput = document.getElementById('challanFile');
-      const note = document.getElementById('challanNote').value.trim();
-      const statusEl = document.getElementById('challanStatus');
-      const submitBtn = document.getElementById('challanSubmit');
+      const fileInput = document.getElementById('challanUploadFile');
+      const note = document.getElementById('challanUploadNote').value.trim();
+      const statusEl = document.getElementById('challanUploadStatus');
+      const submitBtn = document.getElementById('challanUploadSubmit');
       const file = fileInput.files[0];
-      if (!file || !currentUser) return;
+      if (!file || !currentUser || !currentChallanTrip) return;
       submitBtn.disabled = true; submitBtn.textContent = 'Uploading…';
       statusEl.textContent = ''; statusEl.className = 'upload-status';
       const path = currentUser.id + '/' + Date.now() + '-' + file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
@@ -1359,23 +1448,119 @@
       if (upErr) {
         statusEl.textContent = 'Upload failed: ' + upErr.message;
         statusEl.className = 'upload-status err';
-        submitBtn.disabled = false; submitBtn.textContent = 'Upload';
+        submitBtn.disabled = false; submitBtn.textContent = 'Save challan';
         return;
       }
       const { error: insErr } = await sb.from('challans').insert({
-        file_path: path, uploaded_by: currentUser.id
+        file_path: path, uploaded_by: currentUser.id, trip_id: currentChallanTrip.id, note: note || null
       });
-      submitBtn.disabled = false; submitBtn.textContent = 'Upload';
+      submitBtn.disabled = false; submitBtn.textContent = 'Save challan';
       if (insErr) {
         statusEl.textContent = 'Saved the photo, but couldn\'t record it: ' + insErr.message;
         statusEl.className = 'upload-status err';
         return;
       }
-      statusEl.textContent = 'Challan uploaded' + (note ? ' — ' + note : '') + '.';
+      statusEl.textContent = 'Challan attached.';
       statusEl.className = 'upload-status ok';
-      challanForm.reset();
-      loadChallanList();
+      closeChallanUploadModal();
+      await loadTripTracking();
     });
+  }
+
+  // ----- Documents (Manager) — one-time-per-vehicle / per-driver file archive -----
+  const VEHICLE_DOC_TYPES = [
+    { type: 'rc', label: 'RC (Registration Certificate)' },
+    { type: 'insurance', label: 'Insurance' },
+    { type: 'permit', label: 'Permit / Fitness certificate' },
+    { type: 'puc', label: 'PUC (Pollution certificate)' },
+  ];
+  const DRIVER_DOC_TYPES = [
+    { type: 'aadhar', label: 'Aadhar card' },
+    { type: 'license', label: 'Driving license' },
+  ];
+
+  let docsModalEntity = null; // { type: 'vehicle'|'driver', id, label }
+  async function openDocsModal(entityType, entityId, label) {
+    docsModalEntity = { type: entityType, id: entityId, label };
+    document.getElementById('docsModalTitle').textContent = label || '—';
+    document.getElementById('docsModal').classList.add('open');
+    await renderDocsModalBody();
+  }
+  function closeDocsModal() {
+    document.getElementById('docsModal').classList.remove('open');
+    docsModalEntity = null;
+  }
+  document.getElementById('docsModalClose')?.addEventListener('click', closeDocsModal);
+  document.getElementById('docsModal')?.addEventListener('click', (e) => {
+    if (e.target.id === 'docsModal') closeDocsModal();
+  });
+
+  async function renderDocsModalBody() {
+    const body = document.getElementById('docsModalBody');
+    if (!body || !docsModalEntity) return;
+    body.innerHTML = '<div style="color:var(--text-muted)">Loading…</div>';
+    const slots = docsModalEntity.type === 'vehicle' ? VEHICLE_DOC_TYPES : DRIVER_DOC_TYPES;
+    const { data: existing } = await sb.from('documents').select('doc_type, file_path, uploaded_at')
+      .eq('entity_type', docsModalEntity.type).eq('entity_id', docsModalEntity.id);
+    const byType = {};
+    (existing || []).forEach(d => { byType[d.doc_type] = d; });
+    body.innerHTML = slots.map(s => {
+      const doc = byType[s.type];
+      return '<div class="doc-slot">' +
+        '<div class="modal-section-title">' + s.label + '</div>' +
+        '<div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">' +
+          '<span style="font-size:12px; color:' + (doc ? 'var(--status-good)' : 'var(--text-muted)') + ';">' +
+            (doc ? 'On file — uploaded ' + fmtWhen(doc.uploaded_at) : 'Not uploaded yet') +
+          '</span>' +
+          (doc ? '<button class="btn-secondary" data-view-doc="' + doc.file_path + '" type="button">View</button>' : '') +
+          '<label class="btn-primary" style="cursor:pointer; margin:0;">' + (doc ? 'Replace' : 'Upload') +
+            '<input type="file" data-doc-type="' + s.type + '" accept="image/*,.pdf" style="display:none;">' +
+          '</label>' +
+        '</div>' +
+        '<div class="upload-status" id="docsStatus-' + s.type + '"></div>' +
+      '</div>';
+    }).join('');
+
+    body.querySelectorAll('[data-doc-type]').forEach(input => {
+      input.addEventListener('change', async () => {
+        const file = input.files[0];
+        if (!file || !currentUser || !docsModalEntity) return;
+        const docType = input.dataset.docType;
+        const statusEl = document.getElementById('docsStatus-' + docType);
+        statusEl.textContent = 'Uploading…'; statusEl.className = 'upload-status';
+        const path = docsModalEntity.type + '/' + docsModalEntity.id + '/' + docType + '-' + Date.now() + '-' + file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+        const { error: upErr } = await sb.storage.from('documents').upload(path, file, { upsert: false });
+        if (upErr) { statusEl.textContent = 'Upload failed: ' + upErr.message; statusEl.className = 'upload-status err'; return; }
+        const { error: insErr } = await sb.from('documents').upsert({
+          entity_type: docsModalEntity.type, entity_id: docsModalEntity.id, doc_type: docType,
+          file_path: path, uploaded_by: currentUser.id, uploaded_at: new Date().toISOString()
+        }, { onConflict: 'entity_type,entity_id,doc_type' });
+        if (insErr) { statusEl.textContent = 'Saved the file, but couldn\'t record it: ' + insErr.message; statusEl.className = 'upload-status err'; return; }
+        await renderDocsModalBody();
+        if (docsModalEntity && docsModalEntity.type === 'vehicle') loadFleetRoster(); else loadDrivers();
+      });
+    });
+
+    body.querySelectorAll('[data-view-doc]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const { data, error } = await sb.storage.from('documents').createSignedUrl(btn.dataset.viewDoc, 3600);
+        if (error || !data) { alert('Could not open the file: ' + (error ? error.message : 'unknown error')); return; }
+        window.open(data.signedUrl, '_blank');
+      });
+    });
+  }
+
+  // ----- Drivers (Manager) -----
+  async function loadDrivers() {
+    const tbody = document.getElementById('driversBody');
+    if (!tbody) return;
+    const { data, error } = await sb.from('drivers').select('id, name').eq('active', true).order('name');
+    if (error || !data) { tbody.innerHTML = '<tr><td colspan="2" style="color:var(--status-critical)">Could not load drivers.</td></tr>'; return; }
+    if (!data.length) { tbody.innerHTML = '<tr><td colspan="2" style="color:var(--text-muted)">No drivers on file yet — they\'re added automatically the first time you log one into a shift.</td></tr>'; return; }
+    tbody.innerHTML = data.map(d =>
+      '<tr><td>' + d.name + '</td><td><button class="btn-primary" data-open-docs="' + d.id + '" data-label="' + d.name + '" type="button">Docs</button></td></tr>'
+    ).join('');
+    tbody.querySelectorAll('[data-open-docs]').forEach(btn => btn.addEventListener('click', () => openDocsModal('driver', btn.dataset.openDocs, btn.dataset.label)));
   }
 
   // ----- Fleet roster (Manager) -----
@@ -1387,20 +1572,22 @@
       .select('id, registration_number, vehicle_type, wheeler_class, capacity_kl, status, owners(name, owner_type)')
       .order('created_at', { ascending: false });
     if (error || !data) {
-      tbody.innerHTML = '<tr><td colspan="5" style="color:var(--status-critical)">Could not load the roster: ' + (error ? error.message : 'unknown error') + '</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="6" style="color:var(--status-critical)">Could not load the roster: ' + (error ? error.message : 'unknown error') + '</td></tr>';
       if (countEl) countEl.textContent = '—';
       return;
     }
     if (!data.length) {
-      tbody.innerHTML = '<tr><td colspan="5" style="color:var(--text-muted)">No tankers on file yet — use "+ Add tanker" above to add the first one.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="6" style="color:var(--text-muted)">No tankers on file yet — use "+ Add tanker" above to add the first one.</td></tr>';
     } else {
       tbody.innerHTML = data.map(v => {
         const owner = v.owners
           ? v.owners.name + ' <span class="owner-badge ' + (v.owners.owner_type === 'third_party' ? 'third-party">Third-party' : 'driver-owned">Driver-owned') + '</span>'
           : '—';
         const capacity = v.capacity_kl != null ? v.capacity_kl : '—';
-        return '<tr><td>' + v.registration_number + '</td><td>' + (v.wheeler_class ? v.vehicle_type + ' · ' + v.wheeler_class : v.vehicle_type) + '</td><td>' + capacity + '</td><td>' + owner + '</td><td><span class="toggle-btn ' + (v.status === 'active' ? 'on">In service' : 'off">' + v.status) + '</span></td></tr>';
+        return '<tr><td>' + v.registration_number + '</td><td>' + (v.wheeler_class ? v.vehicle_type + ' · ' + v.wheeler_class : v.vehicle_type) + '</td><td>' + capacity + '</td><td>' + owner + '</td><td><span class="toggle-btn ' + (v.status === 'active' ? 'on">In service' : 'off">' + v.status) + '</span></td>' +
+          '<td><button class="btn-primary" data-open-docs="' + v.id + '" data-label="' + v.registration_number + '" type="button">Docs</button></td></tr>';
       }).join('');
+      tbody.querySelectorAll('[data-open-docs]').forEach(btn => btn.addEventListener('click', () => openDocsModal('vehicle', btn.dataset.openDocs, btn.dataset.label)));
     }
     if (countEl) {
       const active = data.filter(v => v.status === 'active').length;
@@ -1582,11 +1769,16 @@
     const tbody = document.getElementById('tripTrackingBody');
     if (!tbody) return;
     const today = todayStr();
+    const missingChallans = await loadChallanDueTrips();
+    renderChallansDue(missingChallans);
+    const dueCountByVehicle = {};
+    missingChallans.forEach(t => { dueCountByVehicle[t.vehicle_id] = (dueCountByVehicle[t.vehicle_id] || 0) + 1; });
+
     const { data: shiftRows } = await sb.from('shift_logs')
       .select('vehicle_id, driver_id, vehicles(registration_number)')
       .eq('shift_date', today);
     if (!shiftRows || !shiftRows.length) {
-      tbody.innerHTML = '<tr><td colspan="4" style="color:var(--text-muted)">No tankers logged into today\'s shift log yet — log one in above first.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="5" style="color:var(--text-muted)">No tankers logged into today\'s shift log yet — log one in above first.</td></tr>';
       return;
     }
     const { data: openTrips } = await sb.from('trips').select('id, vehicle_id, departed_at').is('dumped_at', null);
@@ -1602,9 +1794,14 @@
       const statusHtml = open
         ? '<span class="status-pill working"><span class="status-dot"></span>Out — departed ' + fmtTime(open.departed_at) + '</span>'
         : '<span class="status-pill off"><span class="status-dot"></span>At yard — ready to load</span>';
+      const due = dueCountByVehicle[r.vehicle_id] || 0;
+      const challanHtml = due
+        ? '<span class="status-pill flagged"><span class="status-dot"></span>' + due + ' due</span>'
+        : '<span style="color:var(--text-muted); font-size:12px;">—</span>';
       return '<tr><td>' + (r.vehicles ? r.vehicles.registration_number : '—') + '</td>' +
         '<td>' + statusHtml + '</td>' +
         '<td class="num">' + count + '</td>' +
+        '<td>' + challanHtml + '</td>' +
         '<td><button class="btn-primary" data-mark-departed="' + r.vehicle_id + '" data-driver="' + r.driver_id + '">Mark departed</button></td></tr>';
     }).join('');
 
