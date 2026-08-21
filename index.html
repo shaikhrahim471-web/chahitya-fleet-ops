@@ -618,36 +618,53 @@
 
         <div class="panel">
           <div class="panel-title">Today's shift log</div>
-          <div class="panel-sub">One tap, once a day, per truck: driver is here or not. This is attendance only — it does not track individual trips.</div>
+          <div class="panel-sub">Real — this is live now. Log a truck in once a day with its driver; log it out at end of day. This is attendance only — it does not track individual trips.</div>
+
+          <form class="add-truck-form" id="shiftLogForm">
+            <div class="add-truck-grid">
+              <div class="add-truck-field">
+                <label for="shiftVehicleSelect">Truck</label>
+                <select id="shiftVehicleSelect" required></select>
+              </div>
+              <div class="add-truck-field">
+                <label for="shiftDriverSelect">Driver</label>
+                <select id="shiftDriverSelect" required></select>
+              </div>
+              <div class="add-truck-field" id="shiftNewDriverField" style="display:none;">
+                <label for="shiftNewDriverName">New driver name</label>
+                <input type="text" id="shiftNewDriverName" placeholder="e.g. Ramesh K.">
+              </div>
+              <div class="add-truck-field">
+                <label for="shiftServiceState">Service state</label>
+                <select id="shiftServiceState">
+                  <option value="in_service">In service</option>
+                  <option value="maintenance">In maintenance</option>
+                </select>
+              </div>
+            </div>
+            <button type="submit" class="btn-primary" id="shiftLogSubmit">Log in</button>
+            <div class="upload-status" id="shiftLogStatus"></div>
+          </form>
+
           <table class="data-table">
             <thead>
-              <tr><th>Truck</th><th>Driver today</th><th>Owner</th><th>Login</th><th>Logout</th><th>Service state</th></tr>
+              <tr><th>Truck</th><th>Driver today</th><th>Login</th><th>Logout</th><th>Service state</th><th>Action</th></tr>
             </thead>
-            <tbody>
-              <tr><td><button class="truck-link" data-truck="01">#01</button></td><td>Ramesh K.</td><td>Driver-owned</td><td class="num">7:04 AM</td><td class="num">—</td><td><span class="toggle-btn on">In service</span></td></tr>
-              <tr><td><button class="truck-link" data-truck="03">#03</button></td><td>— unassigned —</td><td>Balaji Tankers Pvt Ltd</td><td class="num">—</td><td class="num">—</td><td><span class="toggle-btn off">In maintenance</span></td></tr>
-              <tr><td><button class="truck-link" data-truck="07">#07</button></td><td>Suresh P.</td><td>Driver-owned</td><td class="num">7:12 AM</td><td class="num">—</td><td><span class="toggle-btn on">In service</span></td></tr>
-              <tr><td><button class="truck-link" data-truck="11">#11</button></td><td>— no-show —</td><td>Balaji Tankers Pvt Ltd</td><td class="num">—</td><td class="num">—</td><td><span class="toggle-btn on">In service</span></td></tr>
-              <tr><td><button class="truck-link" data-truck="14">#14</button></td><td>Vinod S. <span style="color:var(--text-muted); font-weight:400;">(sub for Anil D.)</span></td><td>Anil D. (owner-driver)</td><td class="num">6:58 AM</td><td class="num">—</td><td><span class="toggle-btn on">In service</span></td></tr>
-            </tbody>
+            <tbody id="shiftLogBody"><tr><td colspan="6" style="color:var(--text-muted)">Loading…</td></tr></tbody>
           </table>
-          <div class="annot">"Driver today" can differ from the truck's regular owner-driver — see Truck #14, where Vinod is filling in. The system keeps both the regular assignment and today's actual driver, so trip history stays attributed correctly.</div>
+          <div class="annot">A truck already logged in today won't appear again in the form above until it's logged out — check the table before re-adding it.</div>
         </div>
 
         <div class="panel">
           <div class="panel-title">Live trip tracking — the only per-trip action</div>
-          <div class="panel-sub">The manager taps "Mark departed" each time a truck pulls out of the loading site with a load. That single tap timestamps this trip's start <em>and</em> closes out the truck's previous trip (it's back, so it must have finished its last run). No separate "arrived" or "dumped" entry needed — see the Trip Log tab for how that duration gets recorded today vs. once GPS is added.</div>
+          <div class="panel-sub">Real — this is live now. The manager taps "Mark departed" each time a truck pulls out of the loading site with a load. That single tap timestamps this trip's start <em>and</em> closes out the truck's previous trip (it's back, so it must have finished its last run). Needs the truck logged into today's shift log first, so there's a driver to attribute the trip to.</div>
           <table class="data-table">
             <thead>
-              <tr><th>Truck</th><th>Site</th><th>Current trip status</th><th>Trips today</th><th>Action</th></tr>
+              <tr><th>Truck</th><th>Current trip status</th><th>Trips today</th><th>Action</th></tr>
             </thead>
-            <tbody>
-              <tr><td><button class="truck-link" data-truck="01">#01</button></td><td><select class="mock-select"><option>Loading Site 1</option></select></td><td><span class="status-pill working"><span class="status-dot"></span>Out — departed 9:42 AM</span></td><td class="num">3</td><td><button class="btn-primary">Mark departed</button></td></tr>
-              <tr><td><button class="truck-link" data-truck="07">#07</button></td><td><select class="mock-select"><option>Loading Site 1</option></select></td><td><span class="status-pill flagged"><span class="status-dot"></span>Out 58m — flagged</span></td><td class="num">2</td><td><button class="btn-primary">Mark departed</button></td></tr>
-              <tr><td><button class="truck-link" data-truck="14">#14</button></td><td><select class="mock-select"><option>Loading Site 1</option></select></td><td><span class="status-pill working"><span class="status-dot"></span>At yard — ready to load</span></td><td class="num">3</td><td><button class="btn-primary">Mark departed</button></td></tr>
-            </tbody>
+            <tbody id="tripTrackingBody"><tr><td colspan="4" style="color:var(--text-muted)">Loading…</td></tr></tbody>
           </table>
-          <div class="annot">Only one site exists today (shown as "Loading Site 1"). The dropdown is already built to hold more — adding a second tunnel or dump site later is just adding an option here, not a redesign.</div>
+          <div class="annot" id="tripTrackingStatus">Trucks logged into today's shift log appear here. Trips are tagged to a single active loading site, created automatically the first time this is used.</div>
         </div>
 
         <div class="panel">
@@ -1317,6 +1334,181 @@
         statusEl.className = 'upload-status err';
       }
       submitBtn.disabled = false; submitBtn.textContent = 'Save truck';
+    });
+  }
+
+  // ----- Shift log + trip tracking (Manager) -----
+  let LOADING_SITE_ID = null;
+
+  function todayStr() {
+    const d = new Date();
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  }
+  function fmtTime(iso) {
+    if (!iso) return '—';
+    return new Date(iso).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+  }
+
+  async function ensureLoadingSite() {
+    if (LOADING_SITE_ID) return LOADING_SITE_ID;
+    const { data } = await sb.from('sites').select('id').eq('site_type', 'loading').eq('active', true).order('created_at').limit(1);
+    if (data && data.length) { LOADING_SITE_ID = data[0].id; return LOADING_SITE_ID; }
+    const { data: created, error } = await sb.from('sites').insert({ name: 'Loading Site 1', site_type: 'loading', active: true }).select('id').single();
+    if (error) throw error;
+    LOADING_SITE_ID = created.id;
+    return LOADING_SITE_ID;
+  }
+
+  async function loadShiftFormOptions() {
+    const vehicleSel = document.getElementById('shiftVehicleSelect');
+    const driverSel = document.getElementById('shiftDriverSelect');
+    if (!vehicleSel || !driverSel) return;
+    const { data: vehicles } = await sb.from('vehicles').select('id, registration_number').eq('status', 'active').order('registration_number');
+    const today = todayStr();
+    const { data: todays } = await sb.from('shift_logs').select('vehicle_id').eq('shift_date', today);
+    const loggedIds = new Set((todays || []).map(r => r.vehicle_id));
+    const available = (vehicles || []).filter(v => !loggedIds.has(v.id));
+    vehicleSel.innerHTML = available.length
+      ? available.map(v => '<option value="' + v.id + '">' + v.registration_number + '</option>').join('')
+      : '<option value="">No trucks available to log in</option>';
+
+    const { data: drivers } = await sb.from('drivers').select('id, name').eq('active', true).order('name');
+    driverSel.innerHTML = (drivers || []).map(d => '<option value="' + d.id + '">' + d.name + '</option>').join('')
+      + '<option value="__new__">+ Add new driver…</option>';
+  }
+
+  document.getElementById('shiftDriverSelect')?.addEventListener('change', (e) => {
+    document.getElementById('shiftNewDriverField').style.display = e.target.value === '__new__' ? 'block' : 'none';
+  });
+
+  const shiftLogForm = document.getElementById('shiftLogForm');
+  if (shiftLogForm) {
+    shiftLogForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const vehicleId = document.getElementById('shiftVehicleSelect').value;
+      const driverSelVal = document.getElementById('shiftDriverSelect').value;
+      const newDriverName = document.getElementById('shiftNewDriverName').value.trim();
+      const serviceState = document.getElementById('shiftServiceState').value;
+      const statusEl = document.getElementById('shiftLogStatus');
+      const submitBtn = document.getElementById('shiftLogSubmit');
+      if (!vehicleId) { statusEl.textContent = 'No truck selected.'; statusEl.className = 'upload-status err'; return; }
+      submitBtn.disabled = true; submitBtn.textContent = 'Logging in…';
+      statusEl.textContent = ''; statusEl.className = 'upload-status';
+      try {
+        let driverId = driverSelVal;
+        if (driverSelVal === '__new__') {
+          if (!newDriverName) throw new Error("Enter the new driver's name.");
+          const { data: newDriver, error: dErr } = await sb.from('drivers').insert({ name: newDriverName, active: true }).select('id').single();
+          if (dErr) throw dErr;
+          driverId = newDriver.id;
+        }
+        const { error } = await sb.from('shift_logs').insert({
+          vehicle_id: vehicleId, driver_id: driverId, shift_date: todayStr(),
+          login_time: new Date().toISOString(), service_state: serviceState
+        });
+        if (error) throw error;
+        statusEl.textContent = 'Logged in.'; statusEl.className = 'upload-status ok';
+        shiftLogForm.reset();
+        document.getElementById('shiftNewDriverField').style.display = 'none';
+        await loadShiftFormOptions();
+        await loadShiftLog();
+        await loadTripTracking();
+      } catch (err) {
+        statusEl.textContent = 'Could not log in: ' + (err.message || 'unknown error');
+        statusEl.className = 'upload-status err';
+      }
+      submitBtn.disabled = false; submitBtn.textContent = 'Log in';
+    });
+  }
+
+  async function loadShiftLog() {
+    const tbody = document.getElementById('shiftLogBody');
+    if (!tbody) return;
+    const { data, error } = await sb.from('shift_logs')
+      .select('id, login_time, logout_time, service_state, vehicles(registration_number), drivers(name)')
+      .eq('shift_date', todayStr())
+      .order('login_time', { ascending: false });
+    if (error) { tbody.innerHTML = '<tr><td colspan="6" style="color:var(--status-critical)">Could not load: ' + error.message + '</td></tr>'; return; }
+    if (!data || !data.length) {
+      tbody.innerHTML = '<tr><td colspan="6" style="color:var(--text-muted)">No trucks logged in yet today.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = data.map(r =>
+      '<tr><td>' + (r.vehicles ? r.vehicles.registration_number : '—') + '</td>' +
+      '<td>' + (r.drivers ? r.drivers.name : '—') + '</td>' +
+      '<td class="num">' + fmtTime(r.login_time) + '</td>' +
+      '<td class="num">' + fmtTime(r.logout_time) + '</td>' +
+      '<td><span class="toggle-btn ' + (r.service_state === 'in_service' ? 'on">In service' : 'off">In maintenance') + '</span></td>' +
+      '<td>' + (r.logout_time ? '—' : '<button class="btn-primary" data-shift-logout="' + r.id + '">Log out</button>') + '</td></tr>'
+    ).join('');
+    tbody.querySelectorAll('[data-shift-logout]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        btn.disabled = true; btn.textContent = 'Logging out…';
+        const { error } = await sb.from('shift_logs').update({ logout_time: new Date().toISOString() }).eq('id', btn.dataset.shiftLogout);
+        if (error) { btn.disabled = false; btn.textContent = 'Log out'; alert('Could not log out: ' + error.message); return; }
+        await loadShiftFormOptions();
+        await loadShiftLog();
+      });
+    });
+  }
+
+  async function loadTripTracking() {
+    const tbody = document.getElementById('tripTrackingBody');
+    if (!tbody) return;
+    const today = todayStr();
+    const { data: shiftRows } = await sb.from('shift_logs')
+      .select('vehicle_id, driver_id, vehicles(registration_number)')
+      .eq('shift_date', today);
+    if (!shiftRows || !shiftRows.length) {
+      tbody.innerHTML = '<tr><td colspan="4" style="color:var(--text-muted)">No trucks logged into today\'s shift log yet — log one in above first.</td></tr>';
+      return;
+    }
+    const { data: openTrips } = await sb.from('trips').select('id, vehicle_id, departed_at').is('dumped_at', null);
+    const { data: todayTrips } = await sb.from('trips').select('vehicle_id').gte('departed_at', today + 'T00:00:00.000Z');
+    const openByVehicle = {};
+    (openTrips || []).forEach(t => { openByVehicle[t.vehicle_id] = t; });
+    const countByVehicle = {};
+    (todayTrips || []).forEach(t => { countByVehicle[t.vehicle_id] = (countByVehicle[t.vehicle_id] || 0) + 1; });
+
+    tbody.innerHTML = shiftRows.map(r => {
+      const open = openByVehicle[r.vehicle_id];
+      const count = countByVehicle[r.vehicle_id] || 0;
+      const statusHtml = open
+        ? '<span class="status-pill working"><span class="status-dot"></span>Out — departed ' + fmtTime(open.departed_at) + '</span>'
+        : '<span class="status-pill off"><span class="status-dot"></span>At yard — ready to load</span>';
+      return '<tr><td>' + (r.vehicles ? r.vehicles.registration_number : '—') + '</td>' +
+        '<td>' + statusHtml + '</td>' +
+        '<td class="num">' + count + '</td>' +
+        '<td><button class="btn-primary" data-mark-departed="' + r.vehicle_id + '" data-driver="' + r.driver_id + '">Mark departed</button></td></tr>';
+    }).join('');
+
+    tbody.querySelectorAll('[data-mark-departed]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const vehicleId = btn.dataset.markDeparted;
+        const driverId = btn.dataset.driver;
+        btn.disabled = true; btn.textContent = 'Marking…';
+        const statusEl = document.getElementById('tripTrackingStatus');
+        try {
+          const siteId = await ensureLoadingSite();
+          const open = openByVehicle[vehicleId];
+          if (open) {
+            const { error: closeErr } = await sb.from('trips').update({
+              dumped_at: new Date().toISOString(), dumped_at_source: 'estimated', status: 'completed'
+            }).eq('id', open.id);
+            if (closeErr) throw closeErr;
+          }
+          const { error: openErr } = await sb.from('trips').insert({
+            vehicle_id: vehicleId, driver_id: driverId, loading_site_id: siteId,
+            departed_at: new Date().toISOString(), status: 'in_progress'
+          });
+          if (openErr) throw openErr;
+          statusEl.textContent = 'Trip recorded.';
+          await loadTripTracking();
+        } catch (err) {
+          statusEl.textContent = 'Could not record trip: ' + (err.message || 'unknown error');
+          btn.disabled = false; btn.textContent = 'Mark departed';
+        }
+      });
     });
   }
 
