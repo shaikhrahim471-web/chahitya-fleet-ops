@@ -185,6 +185,30 @@
   button.stat-tile-clickable:hover { border-left-width: 3px; }
   button.stat-tile-clickable .tap-hint { opacity: 0; transition: opacity 0.12s ease; }
   button.stat-tile-clickable:hover .tap-hint { opacity: 1; }
+  button.stat-tile-clickable.stat-tile-active { border-left-width: 3px; box-shadow: var(--shadow-2); }
+  button.stat-tile-clickable.stat-tile-active .tap-hint { opacity: 1; }
+
+  /* Dashboard stat drill-down — inline expander, not a modal */
+  .stat-expander {
+    display: grid;
+    grid-template-rows: 0fr;
+    transition: grid-template-rows 0.3s ease, margin-bottom 0.3s ease;
+    margin-bottom: 0;
+  }
+  .stat-expander.open { grid-template-rows: 1fr; margin-bottom: 24px; }
+  .stat-expander-inner { overflow: hidden; min-height: 0; }
+  .stat-expander-card {
+    background: var(--surface-1); border: 1px solid var(--border); border-radius: var(--radius-md);
+    box-shadow: var(--shadow-1); padding: 18px 20px; max-height: 60vh; overflow-y: auto;
+  }
+  .stat-expander-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
+  .stat-expander-title { font-family: var(--font-disp); font-weight: 700; font-size: 16px; }
+  .stat-expander-sub { font-size: 12.5px; color: var(--text-muted); margin-top: 3px; }
+  .stat-expander-close {
+    appearance: none; border: none; background: var(--page-plane); color: var(--text-secondary);
+    width: 28px; height: 28px; border-radius: 8px; cursor: pointer; flex-shrink: 0; font-size: 13px;
+  }
+  .stat-expander-close:hover { background: #ddd; }
   .stat-label { font-size: 11.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.03em; color: var(--text-muted); margin-bottom: 8px; }
   .stat-value { font-size: 28px; font-weight: 700; line-height: 1; letter-spacing: -0.01em; }
   .stat-value.good { color: var(--status-good); }
@@ -672,6 +696,21 @@
           </button>
         </div>
 
+        <div class="stat-expander" id="dashStatExpander">
+          <div class="stat-expander-inner">
+            <div class="stat-expander-card">
+              <div class="stat-expander-head">
+                <div>
+                  <div class="stat-expander-title" id="dashDrillTitle">—</div>
+                  <div class="stat-expander-sub" id="dashDrillSub">—</div>
+                </div>
+                <button class="stat-expander-close" id="dashDrillClose" type="button" aria-label="Collapse">✕</button>
+              </div>
+              <div id="dashDrillBody"></div>
+            </div>
+          </div>
+        </div>
+
         <div class="two-col">
           <div class="panel">
             <div class="panel-title" id="dashGridTitle">Tanker status — today</div>
@@ -1080,20 +1119,6 @@
   </div>
 </div>
 
-<div class="modal-overlay" id="dashDrillModal">
-  <div class="modal-card" style="max-width:560px;">
-    <div class="modal-head">
-      <div class="modal-head-inner">
-        <div>
-          <div class="veh-num" id="dashDrillTitle">—</div>
-          <div class="veh-sub" id="dashDrillSub">—</div>
-        </div>
-      </div>
-      <button class="modal-close" id="dashDrillClose">✕</button>
-    </div>
-    <div class="modal-body" id="dashDrillBody"></div>
-  </div>
-</div>
 
 <div class="modal-overlay" id="challanUploadModal">
   <div class="modal-card" style="max-width:420px;">
@@ -1286,78 +1311,102 @@
       '"Departed" taps today (' + (todayTrips || []).length + ') should track closely with completed trips (' + doneToday + ') — a big gap between taps and completions is itself a useful signal worth a second look.';
   }
 
-  // ----- Dashboard stat-tile drill-down modal -----
+  // ----- Dashboard stat-tile drill-down — inline expander under the stat row, not a popup -----
   function dashDrillTable(headers, rows, emptyText) {
     if (!rows.length) return '<div style="color:var(--text-muted); font-size:12.5px; padding:4px 0 2px;">' + emptyText + '</div>';
     return '<table class="history-table"><thead><tr>' + headers.map(h => '<th>' + h + '</th>').join('') + '</tr></thead><tbody>' +
       rows.join('') + '</tbody></table>';
   }
 
-  function openDashDrillModal(kind) {
+  function buildDashDrillContent(kind) {
+    if (kind === 'out') {
+      return {
+        title: 'Tankers active now',
+        sub: dashDrillData.out.length + ' out on a trip, ' + dashDrillData.notOut.length + ' not out',
+        html: '<div class="modal-section"><div class="modal-section-title">Out on a trip now</div>' +
+          dashDrillTable(['Tanker', 'Driver', 'Departed', 'Time out'],
+            dashDrillData.out.slice().sort((a, b) => b.mins - a.mins).map(r =>
+              '<tr><td>' + r.reg + '</td><td>' + r.driver + '</td><td class="num">' + fmtTime(r.departed) + '</td><td class="num">' + r.mins + 'm</td></tr>'),
+            'No tankers are out on a trip right now.') + '</div>' +
+          '<div class="modal-section"><div class="modal-section-title">Not out (at yard, off, or unlogged)</div>' +
+          dashDrillTable(['Tanker', 'Status', 'Driver'],
+            dashDrillData.notOut.map(r => '<tr><td>' + r.reg + '</td><td>' + r.state + '</td><td>' + (r.driver || '—') + '</td></tr>'),
+            'Every active tanker is out right now.') + '</div>',
+      };
+    } else if (kind === 'trips') {
+      return {
+        title: 'Trips today',
+        sub: dashDrillData.completed.length + ' completed, ' + dashDrillData.inProgress.length + ' still in progress',
+        html: '<div class="modal-section"><div class="modal-section-title">Completed</div>' +
+          dashDrillTable(['Tanker', 'Driver', 'Departed', 'Dumped'],
+            dashDrillData.completed.map(r => '<tr><td>' + r.reg + '</td><td>' + r.driver + '</td><td class="num">' + fmtTime(r.departed) + '</td><td class="num">' + fmtTime(r.dumped) + (r.dumpedSource === 'estimated' ? ' (est.)' : '') + '</td></tr>'),
+            'No trips completed yet today.') + '</div>' +
+          '<div class="modal-section"><div class="modal-section-title">Still in progress</div>' +
+          dashDrillTable(['Tanker', 'Driver', 'Departed'],
+            dashDrillData.inProgress.map(r => '<tr><td>' + r.reg + '</td><td>' + r.driver + '</td><td class="num">' + fmtTime(r.departed) + '</td></tr>'),
+            'Nothing in progress — every departure today has a dump recorded.') + '</div>',
+      };
+    } else if (kind === 'flagged') {
+      return {
+        title: 'Flagged — out past normal cycle time',
+        sub: dashDrillData.flagged.length ? dashDrillData.flagged.length + ' tanker(s) need a check' : 'None right now',
+        html: '<div class="modal-section" style="font-size:12.5px; color:var(--text-secondary); line-height:1.6;">' +
+          'A tanker is flagged when it has been out with a load for more than 90 minutes without a dump recorded yet. Since the dump time is only inferred from the tanker\'s next departure, we can\'t confirm it actually finished — this usually means it\'s still en route, waiting at the dump ground, broken down, or the manager forgot to tap "Mark departed" again after it came back. Worth a call to check.' +
+          '</div>' +
+          '<div class="modal-section"><div class="modal-section-title">Flagged tankers</div>' +
+          dashDrillTable(['Tanker', 'Driver', 'Departed', 'Time out'],
+            dashDrillData.flagged.slice().sort((a, b) => b.mins - a.mins).map(r =>
+              '<tr><td>' + r.reg + '</td><td>' + r.driver + '</td><td class="num">' + fmtTime(r.departed) + '</td><td class="num">' + r.mins + 'm</td></tr>'),
+            'No tankers are flagged right now.') + '</div>',
+      };
+    } else if (kind === 'checkedin') {
+      return {
+        title: 'Drivers checked in',
+        sub: dashDrillData.checkedIn.length + ' checked in, ' + dashDrillData.notCheckedIn.length + ' not logged in yet',
+        html: '<div class="modal-section"><div class="modal-section-title">Checked in today</div>' +
+          dashDrillTable(['Tanker', 'Driver', 'Login time'],
+            dashDrillData.checkedIn.map(r => '<tr><td>' + r.reg + '</td><td>' + r.driver + '</td><td class="num">' + (r.login ? fmtTime(r.login) : '—') + '</td></tr>'),
+            'No tankers checked in yet today.') + '</div>' +
+          '<div class="modal-section"><div class="modal-section-title">Not logged in yet</div>' +
+          dashDrillTable(['Tanker'],
+            dashDrillData.notCheckedIn.map(r => '<tr><td>' + r.reg + '</td></tr>'),
+            'Every active tanker is checked in today.') + '</div>',
+      };
+    }
+    return { title: '—', sub: '—', html: '' };
+  }
+
+  let dashExpandedStat = null;
+  function setDashExpander(kind) {
+    const wrap = document.getElementById('dashStatExpander');
     const titleEl = document.getElementById('dashDrillTitle');
     const subEl = document.getElementById('dashDrillSub');
     const body = document.getElementById('dashDrillBody');
-    let html = '';
+    const tiles = document.querySelectorAll('#dashStatRow [data-stat]');
 
-    if (kind === 'out') {
-      titleEl.textContent = 'Tankers active now';
-      subEl.textContent = dashDrillData.out.length + ' out on a trip, ' + dashDrillData.notOut.length + ' not out';
-      html += '<div class="modal-section"><div class="modal-section-title">Out on a trip now</div>' +
-        dashDrillTable(['Tanker', 'Driver', 'Departed', 'Time out'],
-          dashDrillData.out.slice().sort((a, b) => b.mins - a.mins).map(r =>
-            '<tr><td>' + r.reg + '</td><td>' + r.driver + '</td><td class="num">' + fmtTime(r.departed) + '</td><td class="num">' + r.mins + 'm</td></tr>'),
-          'No tankers are out on a trip right now.') + '</div>' +
-        '<div class="modal-section"><div class="modal-section-title">Not out (at yard, off, or unlogged)</div>' +
-        dashDrillTable(['Tanker', 'Status', 'Driver'],
-          dashDrillData.notOut.map(r => '<tr><td>' + r.reg + '</td><td>' + r.state + '</td><td>' + (r.driver || '—') + '</td></tr>'),
-          'Every active tanker is out right now.') + '</div>';
-    } else if (kind === 'trips') {
-      titleEl.textContent = 'Trips today';
-      subEl.textContent = dashDrillData.completed.length + ' completed, ' + dashDrillData.inProgress.length + ' still in progress';
-      html += '<div class="modal-section"><div class="modal-section-title">Completed</div>' +
-        dashDrillTable(['Tanker', 'Driver', 'Departed', 'Dumped'],
-          dashDrillData.completed.map(r => '<tr><td>' + r.reg + '</td><td>' + r.driver + '</td><td class="num">' + fmtTime(r.departed) + '</td><td class="num">' + fmtTime(r.dumped) + (r.dumpedSource === 'estimated' ? ' (est.)' : '') + '</td></tr>'),
-          'No trips completed yet today.') + '</div>' +
-        '<div class="modal-section"><div class="modal-section-title">Still in progress</div>' +
-        dashDrillTable(['Tanker', 'Driver', 'Departed'],
-          dashDrillData.inProgress.map(r => '<tr><td>' + r.reg + '</td><td>' + r.driver + '</td><td class="num">' + fmtTime(r.departed) + '</td></tr>'),
-          'Nothing in progress — every departure today has a dump recorded.') + '</div>';
-    } else if (kind === 'flagged') {
-      titleEl.textContent = 'Flagged — out past normal cycle time';
-      subEl.textContent = dashDrillData.flagged.length ? dashDrillData.flagged.length + ' tanker(s) need a check' : 'None right now';
-      html += '<div class="modal-section" style="font-size:12.5px; color:var(--text-secondary); line-height:1.6;">' +
-        'A tanker is flagged when it has been out with a load for more than 90 minutes without a dump recorded yet. Since the dump time is only inferred from the tanker\'s next departure, we can\'t confirm it actually finished — this usually means it\'s still en route, waiting at the dump ground, broken down, or the manager forgot to tap "Mark departed" again after it came back. Worth a call to check.' +
-        '</div>' +
-        '<div class="modal-section"><div class="modal-section-title">Flagged tankers</div>' +
-        dashDrillTable(['Tanker', 'Driver', 'Departed', 'Time out'],
-          dashDrillData.flagged.slice().sort((a, b) => b.mins - a.mins).map(r =>
-            '<tr><td>' + r.reg + '</td><td>' + r.driver + '</td><td class="num">' + fmtTime(r.departed) + '</td><td class="num">' + r.mins + 'm</td></tr>'),
-          'No tankers are flagged right now.') + '</div>';
-    } else if (kind === 'checkedin') {
-      titleEl.textContent = 'Drivers checked in';
-      subEl.textContent = dashDrillData.checkedIn.length + ' checked in, ' + dashDrillData.notCheckedIn.length + ' not logged in yet';
-      html += '<div class="modal-section"><div class="modal-section-title">Checked in today</div>' +
-        dashDrillTable(['Tanker', 'Driver', 'Login time'],
-          dashDrillData.checkedIn.map(r => '<tr><td>' + r.reg + '</td><td>' + r.driver + '</td><td class="num">' + (r.login ? fmtTime(r.login) : '—') + '</td></tr>'),
-          'No tankers checked in yet today.') + '</div>' +
-        '<div class="modal-section"><div class="modal-section-title">Not logged in yet</div>' +
-        dashDrillTable(['Tanker'],
-          dashDrillData.notCheckedIn.map(r => '<tr><td>' + r.reg + '</td></tr>'),
-          'Every active tanker is checked in today.') + '</div>';
+    if (dashExpandedStat === kind) {
+      // same tile tapped again — collapse
+      wrap.classList.remove('open');
+      dashExpandedStat = null;
+      tiles.forEach(el => el.classList.remove('stat-tile-active'));
+      return;
     }
 
-    body.innerHTML = html;
-    document.getElementById('dashDrillModal').classList.add('open');
+    const content = buildDashDrillContent(kind);
+    titleEl.textContent = content.title;
+    subEl.textContent = content.sub;
+    body.innerHTML = content.html;
+    wrap.classList.add('open');
+    dashExpandedStat = kind;
+    tiles.forEach(el => el.classList.toggle('stat-tile-active', el.dataset.stat === kind));
   }
-  function closeDashDrillModal() {
-    document.getElementById('dashDrillModal').classList.remove('open');
-  }
-  document.getElementById('dashDrillClose')?.addEventListener('click', closeDashDrillModal);
-  document.getElementById('dashDrillModal')?.addEventListener('click', (e) => {
-    if (e.target.id === 'dashDrillModal') closeDashDrillModal();
+  document.getElementById('dashDrillClose')?.addEventListener('click', () => {
+    document.getElementById('dashStatExpander').classList.remove('open');
+    dashExpandedStat = null;
+    document.querySelectorAll('#dashStatRow [data-stat]').forEach(el => el.classList.remove('stat-tile-active'));
   });
   document.querySelectorAll('#dashStatRow [data-stat]').forEach(el => {
-    el.addEventListener('click', () => openDashDrillModal(el.dataset.stat));
+    el.addEventListener('click', () => setDashExpander(el.dataset.stat));
   });
 
   // ----- Trip Log (Boss + Manager) — filterable so a 50-60 trip day doesn't mean endless scrolling -----
