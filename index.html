@@ -779,7 +779,34 @@
 
         <div class="panel">
           <div class="panel-title">Drivers</div>
-          <div class="panel-sub">Real — this is live now. Aadhar card and driving license are stored once per driver here and stay on file even as they move between tankers — no need to re-upload.</div>
+          <div class="panel-sub">Real — this is live now. Add a driver once here and their Aadhar card and driving license are stored with them, staying on file even as they move between tankers — no need to re-upload.</div>
+          <div style="display:flex; gap:12px; align-items:center; margin-bottom:16px;">
+            <button class="btn-primary" id="addDriverBtn" type="button">+ Add driver</button>
+          </div>
+
+          <form class="add-truck-form" id="addDriverForm" style="display:none;">
+            <div class="add-truck-grid">
+              <div class="add-truck-field">
+                <label for="driverName">Name</label>
+                <input type="text" id="driverName" placeholder="e.g. Ramesh K." required>
+              </div>
+              <div class="add-truck-field">
+                <label for="driverPhone">Phone (optional)</label>
+                <input type="text" id="driverPhone" placeholder="+91 ...">
+              </div>
+              <div class="add-truck-field">
+                <label for="driverAadhar">Aadhar card (optional)</label>
+                <input type="file" id="driverAadhar" accept="image/*,.pdf">
+              </div>
+              <div class="add-truck-field">
+                <label for="driverLicense">Driving license (optional)</label>
+                <input type="file" id="driverLicense" accept="image/*,.pdf">
+              </div>
+            </div>
+            <button type="submit" class="btn-primary" id="addDriverSubmit">Save driver</button>
+            <div class="upload-status" id="addDriverStatus"></div>
+          </form>
+
           <table class="data-table" id="driversTable">
             <thead><tr><th>Name</th><th>Documents</th></tr></thead>
             <tbody id="driversBody"><tr><td colspan="2" style="color:var(--text-muted)">Loading…</td></tr></tbody>
@@ -1579,11 +1606,67 @@
     if (!tbody) return;
     const { data, error } = await sb.from('drivers').select('id, name').eq('active', true).order('name');
     if (error || !data) { tbody.innerHTML = '<tr><td colspan="2" style="color:var(--status-critical)">Could not load drivers.</td></tr>'; return; }
-    if (!data.length) { tbody.innerHTML = '<tr><td colspan="2" style="color:var(--text-muted)">No drivers on file yet — they\'re added automatically the first time you log one into a shift.</td></tr>'; return; }
+    if (!data.length) { tbody.innerHTML = '<tr><td colspan="2" style="color:var(--text-muted)">No drivers on file yet — use "+ Add driver" above, or they\'re added automatically the first time you log one into a shift.</td></tr>'; return; }
     tbody.innerHTML = data.map(d =>
       '<tr><td>' + d.name + '</td><td><button class="btn-primary" data-open-docs="' + d.id + '" data-label="' + d.name + '" type="button">Docs</button></td></tr>'
     ).join('');
     tbody.querySelectorAll('[data-open-docs]').forEach(btn => btn.addEventListener('click', () => openDocsModal('driver', btn.dataset.openDocs, btn.dataset.label)));
+  }
+
+  const addDriverBtn = document.getElementById('addDriverBtn');
+  if (addDriverBtn) {
+    addDriverBtn.addEventListener('click', () => {
+      const f = document.getElementById('addDriverForm');
+      f.style.display = f.style.display === 'none' ? 'block' : 'none';
+    });
+  }
+
+  const addDriverForm = document.getElementById('addDriverForm');
+  if (addDriverForm) {
+    addDriverForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const name = document.getElementById('driverName').value.trim();
+      const phone = document.getElementById('driverPhone').value.trim();
+      const aadharFile = document.getElementById('driverAadhar').files[0];
+      const licenseFile = document.getElementById('driverLicense').files[0];
+      const statusEl = document.getElementById('addDriverStatus');
+      const submitBtn = document.getElementById('addDriverSubmit');
+      if (!name) return;
+      submitBtn.disabled = true; submitBtn.textContent = 'Adding…';
+      statusEl.textContent = ''; statusEl.className = 'upload-status';
+      try {
+        const { data: driverRow, error: dErr } = await sb.from('drivers')
+          .insert({ name, phone: phone || null, active: true })
+          .select('id').single();
+        if (dErr) throw dErr;
+        const driverId = driverRow.id;
+
+        async function uploadDriverDoc(file, docType) {
+          if (!file) return;
+          const path = 'driver/' + driverId + '/' + docType + '-' + Date.now() + '-' + file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+          const { error: upErr } = await sb.storage.from('documents').upload(path, file, { upsert: false });
+          if (upErr) throw upErr;
+          const { error: insErr } = await sb.from('documents').upsert({
+            entity_type: 'driver', entity_id: driverId, doc_type: docType,
+            file_path: path, uploaded_by: currentUser.id, uploaded_at: new Date().toISOString()
+          }, { onConflict: 'entity_type,entity_id,doc_type' });
+          if (insErr) throw insErr;
+        }
+        await uploadDriverDoc(aadharFile, 'aadhar');
+        await uploadDriverDoc(licenseFile, 'license');
+
+        statusEl.textContent = 'Driver added.';
+        statusEl.className = 'upload-status ok';
+        addDriverForm.reset();
+        addDriverForm.style.display = 'none';
+        loadDrivers();
+        loadShiftFormOptions();
+      } catch (err) {
+        statusEl.textContent = 'Could not add driver: ' + (err.message || 'unknown error') + (err.message && err.message.includes('row-level security') ? ' — only Manager accounts can add drivers.' : '');
+        statusEl.className = 'upload-status err';
+      }
+      submitBtn.disabled = false; submitBtn.textContent = 'Save driver';
+    });
   }
 
   // ----- Fleet roster (Manager) -----
