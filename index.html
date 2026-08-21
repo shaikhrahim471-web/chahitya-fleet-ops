@@ -263,6 +263,50 @@
   .two-col { display: grid; grid-template-columns: 1.4fr 1fr; gap: 20px; align-items: start; }
   @media (max-width: 900px) { .two-col { grid-template-columns: 1fr; } .stat-row { grid-template-columns: repeat(2,1fr); } }
 
+  /* ===== Mobile layout ===== */
+  .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .table-scroll table.data-table { min-width: 560px; }
+
+  @media (max-width: 780px) {
+    .app-shell { flex-direction: column; }
+    .sidebar {
+      width: 100%; height: auto; position: sticky; top: 0; z-index: 30;
+      flex-direction: row; align-items: center; padding: 10px 12px; gap: 10px;
+    }
+    .sidebar-brand { padding: 0; flex-shrink: 0; }
+    .fleet-tag { display: none; }
+    .side-nav { flex-direction: row; flex: 1; gap: 3px; overflow-x: auto; padding-bottom: 2px; }
+    .side-nav-label { display: none; }
+    .tab-btn { flex-direction: column; gap: 3px; font-size: 10px; padding: 6px 9px; white-space: nowrap; width: auto; }
+    .tab-btn.active { box-shadow: inset 0 -2px 0 var(--series-1); }
+    .sidebar-footer { display: none; }
+    main { padding: 18px 14px 50px; }
+  }
+
+  @media (max-width: 560px) {
+    .notice { padding: 8px 14px; font-size: 11.5px; }
+    .topbar { padding: 10px 14px; flex-wrap: wrap; gap: 8px; }
+    .topbar-title { font-size: 14px; }
+    h1.page-title { font-size: 18px; }
+    p.page-sub { margin-bottom: 16px; }
+    main { padding: 14px 12px 50px; }
+    .stat-row { grid-template-columns: 1fr 1fr; gap: 8px; }
+    .stat-tile { padding: 12px 13px; }
+    .stat-value { font-size: 22px; }
+    .panel { padding: 15px 14px; }
+    .add-truck-grid { grid-template-columns: 1fr; }
+    .kv-grid { grid-template-columns: 1fr; }
+    .trip-summary-row { flex-wrap: wrap; }
+    .trip-summary-cell { min-width: 30%; }
+    .upload-row { flex-direction: column; align-items: stretch; }
+    .upload-row input[type="text"] { flex: none; }
+    .filter-row { flex-wrap: wrap; }
+    .modal-overlay { padding: 0; align-items: flex-end; }
+    .modal-card { max-width: 100%; max-height: 92vh; border-radius: var(--radius-lg) var(--radius-lg) 0 0; }
+    .user-chip .who { display: none; }
+    .truck-grid { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); }
+  }
+
   .tap-hint { font-size: 10.5px; color: var(--series-1); margin-top: 6px; font-weight: 600; }
   .truck-link {
     appearance: none; border: none; background: none; font: inherit; padding: 0;
@@ -1574,6 +1618,19 @@
       });
     });
   }
+
+  // Wrap every data table in a horizontally-scrollable container (mobile-friendly,
+  // works for tables rendered dynamically since it just checks each one is wrapped once).
+  function wrapDataTablesForScroll() {
+    document.querySelectorAll('table.data-table').forEach(t => {
+      if (t.parentElement && t.parentElement.classList.contains('table-scroll')) return;
+      const wrap = document.createElement('div');
+      wrap.className = 'table-scroll';
+      t.parentNode.insertBefore(wrap, t);
+      wrap.appendChild(t);
+    });
+  }
+  wrapDataTablesForScroll();
 
   initSession();
 </script>
