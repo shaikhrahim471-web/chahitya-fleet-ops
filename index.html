@@ -417,8 +417,13 @@
 
   /* ===== Login screen ===== */
   .login-screen {
-    position: fixed; inset: 0; z-index: 100; display: flex; align-items: center; justify-content: center;
+    position: fixed; inset: 0; z-index: 100; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 18px;
     background: var(--page-plane);
+  }
+  .login-intro {
+    text-align: center; font-family: var(--font-disp); font-weight: 700; font-size: 15px;
+    color: var(--text-secondary); letter-spacing: 0.01em; padding: 0 20px;
   }
   .login-card {
     width: 100%; max-width: 360px; background: var(--surface-1); border: 1px solid var(--border); border-radius: var(--radius-lg);
@@ -527,6 +532,7 @@
 
 <!-- LOGIN SCREEN -->
 <div class="login-screen" id="loginScreen">
+  <div class="login-intro">CRM for Chahitya Infrastructure Limited</div>
   <div class="login-card">
     <div class="login-brand">
       <div class="brand-mark"><img src="icon-192.png" alt="Chahitya Enterprise logo"></div>
