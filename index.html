@@ -5,21 +5,25 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Chahitya Enterprise — Fleet Ops</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root {
     color-scheme: light;
+    --font-body: 'IBM Plex Sans', system-ui, -apple-system, "Segoe UI", sans-serif;
+    --font-disp: 'Sora', var(--font-body);
     --surface-1:      #ffffff;
-    --page-plane:     #f4f4f2;
-    --sidebar-bg:     #14151a;
-    --sidebar-bg-2:   #1b1c22;
-    --text-primary:   #0b0b0b;
-    --text-secondary: #52514e;
-    --text-muted:     #898781;
-    --gridline:       #eae9e4;
+    --page-plane:     #f7f7f5;
+    --sidebar-bg:     #ffffff;
+    --sidebar-bg-2:   #ffffff;
+    --text-primary:   #1c2027;
+    --text-secondary: #52545c;
+    --text-muted:     #7a7d85;
+    --gridline:       #ececea;
     --baseline:       #c3c2b7;
-    --border:         rgba(11,11,11,0.08);
+    --border:         rgba(28,32,39,0.09);
 
-    --series-1: #2a78d6; /* blue */
+    --series-1: #2f6fe0; /* blue */
     --series-2: #eb6834; /* orange */
     --series-3: #1baf7a; /* aqua */
     --series-4: #eda100; /* yellow */
@@ -39,11 +43,13 @@
   * { box-sizing: border-box; }
   body {
     margin: 0;
-    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    font-family: var(--font-body);
     background: var(--page-plane);
     color: var(--text-primary);
     -webkit-font-smoothing: antialiased;
   }
+  h1, h2, h3, .page-title, .topbar-title, .panel-title, .brand-name, .login-title,
+  .stat-value, .modal-head .veh-num, .user-chip .name { font-family: var(--font-disp); }
 
   /* ===== Top notice strip ===== */
   .notice-stack { position: sticky; top: 0; z-index: 40; }
@@ -61,8 +67,9 @@
 
   .sidebar {
     width: 248px; flex-shrink: 0;
-    background: linear-gradient(180deg, var(--sidebar-bg), var(--sidebar-bg-2));
-    color: #e8e7e3;
+    background: var(--surface-1);
+    border-right: 1px solid var(--border);
+    color: var(--text-primary);
     display: flex; flex-direction: column;
     padding: 20px 14px;
     position: sticky; top: 0; height: 100vh;
@@ -70,41 +77,39 @@
   .sidebar-brand { display: flex; align-items: center; gap: 10px; padding: 0 8px 6px; }
   .brand-mark {
     width: 36px; height: 36px; border-radius: 10px; flex-shrink: 0;
-    background: linear-gradient(135deg, var(--series-1), #1d5eb0);
+    background: var(--series-1);
     display: flex; align-items: center; justify-content: center;
     color: white; font-weight: 700; font-size: 14px;
-    box-shadow: 0 4px 10px rgba(42,120,214,0.35);
   }
-  .brand-name { font-weight: 700; font-size: 14px; color: #fff; line-height: 1.25; }
-  .brand-sub-small { font-size: 11px; color: #9a9a94; margin-top: 1px; }
+  .brand-name { font-weight: 700; font-size: 14.5px; color: var(--text-primary); line-height: 1.25; }
+  .brand-sub-small { font-size: 11px; color: var(--text-muted); margin-top: 1px; }
 
   .fleet-tag {
-    margin: 14px 8px 18px; padding: 8px 10px;
-    background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08);
-    border-radius: var(--radius-sm); font-size: 11px; color: #c7c6c0; line-height: 1.4;
+    margin: 14px 8px 18px; padding: 10px 12px;
+    background: rgba(47,111,224,0.07); border: 1px solid rgba(47,111,224,0.12);
+    border-radius: var(--radius-sm); font-size: 11px; color: var(--text-secondary); line-height: 1.4;
   }
 
   .side-nav { display: flex; flex-direction: column; gap: 2px; flex: 1; }
   .side-nav-label {
     font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em;
-    color: #6f6f6a; padding: 10px 10px 6px;
+    color: var(--text-muted); padding: 10px 10px 6px;
   }
   .tab-btn {
     display: flex; align-items: center; gap: 10px;
     appearance: none; border: none; background: none; text-align: left;
-    font: inherit; font-size: 13px; font-weight: 500; color: #c7c6c0;
+    font: inherit; font-size: 13px; font-weight: 500; color: var(--text-secondary);
     padding: 9px 10px; border-radius: var(--radius-sm); cursor: pointer;
     width: 100%;
   }
   .tab-btn svg { width: 17px; height: 17px; flex-shrink: 0; opacity: 0.85; }
-  .tab-btn:hover { background: rgba(255,255,255,0.06); color: #fff; }
+  .tab-btn:hover { background: var(--page-plane); color: var(--text-primary); }
   .tab-btn.active {
-    background: rgba(42,120,214,0.18); color: #fff;
-    box-shadow: inset 2px 0 0 var(--series-1);
+    background: rgba(47,111,224,0.1); color: var(--series-1); font-weight: 600;
   }
-  .tab-btn.active svg { opacity: 1; color: #6fa8ec; }
+  .tab-btn.active svg { opacity: 1; color: var(--series-1); }
 
-  .sidebar-footer { font-size: 10.5px; color: #6f6f6a; padding: 10px 8px 0; border-top: 1px solid rgba(255,255,255,0.08); margin-top: 10px; }
+  .sidebar-footer { font-size: 10.5px; color: var(--text-muted); padding: 10px 8px 0; border-top: 1px solid var(--border); margin-top: 10px; }
 
   .main-wrap { flex: 1; min-width: 0; display: flex; flex-direction: column; }
 
@@ -384,11 +389,11 @@
   /* ===== Login screen ===== */
   .login-screen {
     position: fixed; inset: 0; z-index: 100; display: flex; align-items: center; justify-content: center;
-    background: linear-gradient(160deg, var(--sidebar-bg), var(--sidebar-bg-2));
+    background: var(--page-plane);
   }
   .login-card {
-    width: 100%; max-width: 360px; background: var(--surface-1); border-radius: var(--radius-lg);
-    padding: 30px 28px; box-shadow: 0 24px 60px rgba(0,0,0,0.35);
+    width: 100%; max-width: 360px; background: var(--surface-1); border: 1px solid var(--border); border-radius: var(--radius-lg);
+    padding: 30px 28px; box-shadow: 0 20px 48px rgba(28,32,39,0.10);
   }
   .login-brand { display: flex; align-items: center; gap: 10px; margin-bottom: 22px; }
   .login-title { font-size: 17px; font-weight: 700; margin: 0 0 4px; }
