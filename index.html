@@ -493,6 +493,13 @@
     border-radius: 999px; border: 1px solid var(--border); background: var(--surface-1); color: var(--text-secondary);
   }
   .btn-ghost-sm:hover { border-color: var(--text-muted); color: var(--text-primary); }
+  .btn-icon-add {
+    width: 32px; height: 32px; border-radius: 999px; flex-shrink: 0;
+    border: 1px solid var(--border); background: var(--surface-1); color: var(--series-1);
+    font-size: 20px; font-weight: 600; line-height: 1; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; padding: 0;
+  }
+  .btn-icon-add:hover { border-color: var(--series-1); background: rgba(42,120,214,0.08); }
 
   /* ===== Notification bell ===== */
   .notif-wrap { position: relative; }
@@ -819,10 +826,9 @@
         <h1 class="page-title">Fleet &amp; Drivers</h1>
 
         <div class="panel">
-          <div class="panel-title">Fleet roster</div>
-          <div style="display:flex; gap:12px; align-items:center; margin-bottom:16px;">
-            <button class="btn-primary" id="addTruckBtn" type="button">+ Add tanker</button>
-            <span class="annot" id="fleetRosterCount" style="border-top:none; padding-top:0; margin-top:0;">Loading…</span>
+          <div class="panel-head-row" style="margin-bottom:16px;">
+            <div class="panel-title" style="margin-bottom:0;">Fleet roster <span id="fleetRosterCount" style="color:var(--text-muted); font-weight:400; font-size:12.5px;">Loading…</span></div>
+            <button class="btn-icon-add" id="addTruckBtn" type="button" aria-label="Add tanker" title="Add tanker">+</button>
           </div>
 
           <form class="add-truck-form" id="addTruckForm" style="display:none;">
@@ -870,9 +876,9 @@
         </div>
 
         <div class="panel">
-          <div class="panel-title">Drivers</div>
-          <div style="display:flex; gap:12px; align-items:center; margin-bottom:16px;">
-            <button class="btn-primary" id="addDriverBtn" type="button">+ Add driver</button>
+          <div class="panel-head-row" style="margin-bottom:16px;">
+            <div class="panel-title" style="margin-bottom:0;">Drivers</div>
+            <button class="btn-icon-add" id="addDriverBtn" type="button" aria-label="Add driver" title="Add driver">+</button>
           </div>
 
           <form class="add-truck-form" id="addDriverForm" style="display:none;">
