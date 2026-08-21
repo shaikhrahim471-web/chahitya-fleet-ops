@@ -792,8 +792,8 @@
         </div>
 
         <div class="panel">
-          <div class="panel-title">Live trip tracking — the only per-trip action</div>
-          <div class="panel-sub">Real — this is live now. The manager taps "Mark departed" each time a tanker pulls out of the loading site with a load. That single tap timestamps this trip's start <em>and</em> closes out the tanker's previous trip (it's back, so it must have finished its last run). Needs the tanker logged into today's shift log first, so there's a driver to attribute the trip to.</div>
+          <div class="panel-title">Live trip tracking</div>
+          <div class="panel-sub">Real — this is live now. Tap "Mark departed" each time a tanker pulls out of the loading site with a load — timestamps that trip's start and, if a trip was already open for this tanker, closes it out as returned first. If a tanker is back at the yard and done for now — nothing more to load, or its day is over — tap "Mark returned" instead so it stops showing as still out on the road. Needs the tanker logged into today's shift log first, so there's a driver to attribute the trip to.</div>
           <table class="data-table">
             <thead>
               <tr><th>Tanker</th><th>Current trip status</th><th>Trips today</th><th>Challan</th><th>Action</th></tr>
@@ -2383,7 +2383,10 @@
         '<td>' + statusHtml + '</td>' +
         '<td class="num">' + count + '</td>' +
         '<td>' + challanHtml + '</td>' +
-        '<td><button class="btn-primary" data-mark-departed="' + r.vehicle_id + '" data-driver="' + r.driver_id + '">Mark departed</button></td></tr>';
+        '<td>' +
+          '<button class="btn-primary" data-mark-departed="' + r.vehicle_id + '" data-driver="' + r.driver_id + '">Mark departed</button>' +
+          (open ? ' <button class="btn-ghost-sm" data-mark-returned="' + r.vehicle_id + '" data-trip="' + open.id + '">Mark returned</button>' : '') +
+        '</td></tr>';
     }).join('');
 
     tbody.querySelectorAll('[data-mark-departed]').forEach(btn => {
@@ -2411,6 +2414,25 @@
         } catch (err) {
           statusEl.textContent = 'Could not record trip: ' + (err.message || 'unknown error');
           btn.disabled = false; btn.textContent = 'Mark departed';
+        }
+      });
+    });
+
+    tbody.querySelectorAll('[data-mark-returned]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const tripId = btn.dataset.trip;
+        btn.disabled = true; btn.textContent = 'Marking…';
+        const statusEl = document.getElementById('tripTrackingStatus');
+        try {
+          const { error } = await sb.from('trips').update({
+            dumped_at: new Date().toISOString(), dumped_at_source: 'estimated', status: 'completed'
+          }).eq('id', tripId);
+          if (error) throw error;
+          statusEl.textContent = 'Tanker marked returned — done for now, no new trip started.';
+          await loadTripTracking();
+        } catch (err) {
+          statusEl.textContent = 'Could not mark returned: ' + (err.message || 'unknown error');
+          btn.disabled = false; btn.textContent = 'Mark returned';
         }
       });
     });
