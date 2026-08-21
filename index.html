@@ -592,7 +592,7 @@
     <nav class="side-nav">
       <button class="tab-btn active" data-screen="dashboard" data-roles="boss" data-title="Fleet Overview">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
-        Boss Dashboard
+        Director Dashboard
       </button>
       <button class="tab-btn" data-screen="operations" data-roles="manager" data-title="Manager Operations">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
@@ -643,7 +643,7 @@
       <!-- DASHBOARD -->
       <section class="screen active" id="dashboard">
         <h1 class="page-title">Fleet Overview</h1>
-        <p class="page-sub">What the bosses see first — today, at a glance.</p>
+        <p class="page-sub">What the Director sees first — today, at a glance.</p>
 
         <div class="stat-row" id="dashStatRow">
           <button type="button" class="stat-tile accent-good stat-tile-clickable" data-stat="out">
@@ -977,11 +977,11 @@
 
         <div class="panel">
           <div class="panel-title">Accounts &amp; access</div>
-          <div class="panel-sub" style="margin-bottom:0;">No public sign-up, no Google/social login — this stays a closed, admin-issued system to match a small operation. The owner creates a username + password for each person individually (one login per Boss, one per Manager, not shared credentials) and hands it to them directly. There's no self-serve "forgot password" — a forgotten password means asking the owner to reissue one. Nothing to build for this on the Boss/Manager screens; it's handled at setup, not as a feature either of them sees.</div>
+          <div class="panel-sub" style="margin-bottom:0;">No public sign-up, no Google/social login — this stays a closed, admin-issued system to match a small operation. The owner creates a username + password for each person individually (one login per Director, one per Manager, not shared credentials) and hands it to them directly. There's no self-serve "forgot password" — a forgotten password means asking the owner to reissue one. Nothing to build for this on the Director/Manager screens; it's handled at setup, not as a feature either of them sees.</div>
         </div>
       </section>
 
-      <!-- SETTINGS (Boss only) -->
+      <!-- SETTINGS (Director only) -->
       <section class="screen" id="settings">
         <h1 class="page-title">Settings</h1>
         <p class="page-sub">Housekeeping for the system itself — nothing here needs regular attention.</p>
@@ -1016,7 +1016,7 @@
 
         <div class="panel">
           <div class="panel-title">Accounts</div>
-          <div class="panel-sub" style="margin-bottom:0;">Boss and Manager logins are created individually by the owner in the Supabase dashboard — there's no add-user screen here by design, to keep this a closed system. Ask the owner if you need a new login or a password reset.</div>
+          <div class="panel-sub" style="margin-bottom:0;">Director and Manager logins are created individually by the owner in the Supabase dashboard — there's no add-user screen here by design, to keep this a closed system. Ask the owner if you need a new login or a password reset.</div>
         </div>
       </section>
 
@@ -1646,7 +1646,7 @@
     if (!currentUser) return;
     document.getElementById('userName').textContent = currentUser.name || currentUser.email;
     const badge = document.getElementById('userRoleBadge');
-    badge.textContent = currentUser.role === 'manager' ? 'Manager' : 'Boss';
+    badge.textContent = currentUser.role === 'manager' ? 'Manager' : 'Director';
     badge.className = 'role-badge ' + (currentUser.role === 'manager' ? 'manager' : 'boss');
     const initials = (currentUser.name || currentUser.email || '?').trim().split(/\s+/).map(s => s[0]).slice(0,2).join('').toUpperCase();
     document.getElementById('userAvatar').textContent = initials;
