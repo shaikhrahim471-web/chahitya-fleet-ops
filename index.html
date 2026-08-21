@@ -1425,6 +1425,7 @@
         document.getElementById('truckType').value = 'tanker';
         addTruckForm.style.display = 'none';
         loadFleetRoster();
+        loadShiftFormOptions();
       } catch (err) {
         statusEl.textContent = 'Could not add truck: ' + (err.message || 'unknown error') + (err.message && err.message.includes('row-level security') ? ' — only Manager accounts can add trucks.' : '');
         statusEl.className = 'upload-status err';
@@ -1471,6 +1472,11 @@
     const { data: drivers } = await sb.from('drivers').select('id, name').eq('active', true).order('name');
     driverSel.innerHTML = (drivers || []).map(d => '<option value="' + d.id + '">' + d.name + '</option>').join('')
       + '<option value="__new__">+ Add new driver…</option>';
+    // If "+ Add new driver…" ends up selected by default (e.g. no drivers exist yet), the
+    // browser's native change event never fires since the selection didn't change — so show
+    // the name field immediately whenever that's the resulting selection, not just on change.
+    const newDriverField = document.getElementById('shiftNewDriverField');
+    if (newDriverField) newDriverField.style.display = driverSel.value === '__new__' ? 'block' : 'none';
   }
 
   document.getElementById('shiftDriverSelect')?.addEventListener('change', (e) => {
