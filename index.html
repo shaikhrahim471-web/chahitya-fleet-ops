@@ -602,7 +602,7 @@
 
         <div class="stat-row" id="dashStatRow">
           <div class="stat-tile accent-good">
-            <div class="stat-label">Trucks active now</div>
+            <div class="stat-label">Tankers active now</div>
             <div class="stat-value good" id="dashStatOut">—</div>
             <div class="stat-delta" id="dashStatOutSub">Loading…</div>
           </div>
@@ -625,14 +625,14 @@
 
         <div class="two-col">
           <div class="panel">
-            <div class="panel-title" id="dashGridTitle">Truck status — today</div>
-            <div class="panel-sub">Real — this is live now. Color = current state. Click a truck to see its driver, owner, and trip history. This grid is driven by however many trucks are on the roster — add or retire one in Operations and it appears/disappears here automatically, no rebuild needed.</div>
+            <div class="panel-title" id="dashGridTitle">Tanker status — today</div>
+            <div class="panel-sub">Real — this is live now. Color = current state. Click a tanker to see its driver, owner, and trip history. This grid is driven by however many tankers are on the roster — add or retire one in Operations and it appears/disappears here automatically, no rebuild needed.</div>
             <div class="truck-grid" id="dashTruckGrid"><div style="color:var(--text-muted); padding:8px;">Loading…</div></div>
           </div>
 
           <div class="panel">
             <div class="panel-title">Trips today</div>
-            <div class="panel-sub">Only one loading site exists right now, so this is fleet-wide. The moment a second site goes live, this panel splits into one bar per site automatically — same as the truck grid scales with fleet size.</div>
+            <div class="panel-sub">Only one loading site exists right now, so this is fleet-wide. The moment a second site goes live, this panel splits into one bar per site automatically — same as the tanker grid scales with fleet size.</div>
             <div class="site-bars" id="dashSiteBars"><div style="color:var(--text-muted); padding:8px;">Loading…</div></div>
             <div class="annot" id="dashSiteAnnot">"Departed" taps today should track closely with completed trips — a big gap between taps and completions is itself a useful signal worth a second look.</div>
           </div>
@@ -642,16 +642,16 @@
       <!-- OPERATIONS -->
       <section class="screen" id="operations">
         <h1 class="page-title">Manager Operations</h1>
-        <p class="page-sub">Where the on-site manager assigns trucks/drivers and marks vehicles in or out of service.</p>
+        <p class="page-sub">Where the on-site manager assigns tankers/drivers and marks vehicles in or out of service.</p>
 
         <div class="panel">
           <div class="panel-title">Today's shift log</div>
-          <div class="panel-sub">Real — this is live now. Log a truck in once a day with its driver; log it out at end of day. This is attendance only — it does not track individual trips.</div>
+          <div class="panel-sub">Real — this is live now. Log a tanker in once a day with its driver; log it out at end of day. This is attendance only — it does not track individual trips.</div>
 
           <form class="add-truck-form" id="shiftLogForm">
             <div class="add-truck-grid">
               <div class="add-truck-field">
-                <label for="shiftVehicleSelect">Truck</label>
+                <label for="shiftVehicleSelect">Tanker</label>
                 <select id="shiftVehicleSelect" required></select>
               </div>
               <div class="add-truck-field">
@@ -676,23 +676,23 @@
 
           <table class="data-table">
             <thead>
-              <tr><th>Truck</th><th>Driver today</th><th>Login</th><th>Logout</th><th>Service state</th><th>Action</th></tr>
+              <tr><th>Tanker</th><th>Driver today</th><th>Login</th><th>Logout</th><th>Service state</th><th>Action</th></tr>
             </thead>
             <tbody id="shiftLogBody"><tr><td colspan="6" style="color:var(--text-muted)">Loading…</td></tr></tbody>
           </table>
-          <div class="annot">A truck already logged in today won't appear again in the form above until it's logged out — check the table before re-adding it.</div>
+          <div class="annot">A tanker already logged in today won't appear again in the form above until it's logged out — check the table before re-adding it.</div>
         </div>
 
         <div class="panel">
           <div class="panel-title">Live trip tracking — the only per-trip action</div>
-          <div class="panel-sub">Real — this is live now. The manager taps "Mark departed" each time a truck pulls out of the loading site with a load. That single tap timestamps this trip's start <em>and</em> closes out the truck's previous trip (it's back, so it must have finished its last run). Needs the truck logged into today's shift log first, so there's a driver to attribute the trip to.</div>
+          <div class="panel-sub">Real — this is live now. The manager taps "Mark departed" each time a tanker pulls out of the loading site with a load. That single tap timestamps this trip's start <em>and</em> closes out the tanker's previous trip (it's back, so it must have finished its last run). Needs the tanker logged into today's shift log first, so there's a driver to attribute the trip to.</div>
           <table class="data-table">
             <thead>
-              <tr><th>Truck</th><th>Current trip status</th><th>Trips today</th><th>Action</th></tr>
+              <tr><th>Tanker</th><th>Current trip status</th><th>Trips today</th><th>Action</th></tr>
             </thead>
             <tbody id="tripTrackingBody"><tr><td colspan="4" style="color:var(--text-muted)">Loading…</td></tr></tbody>
           </table>
-          <div class="annot" id="tripTrackingStatus">Trucks logged into today's shift log appear here. Trips are tagged to a single active loading site, created automatically the first time this is used.</div>
+          <div class="annot" id="tripTrackingStatus">Tankers logged into today's shift log appear here. Trips are tagged to a single active loading site, created automatically the first time this is used.</div>
         </div>
 
         <div class="panel">
@@ -701,7 +701,7 @@
           <form id="challanForm">
             <div class="upload-row">
               <input type="file" id="challanFile" accept="image/*,.pdf" required>
-              <input type="text" id="challanNote" placeholder="Optional note (truck #, trip, etc.)">
+              <input type="text" id="challanNote" placeholder="Optional note (tanker #, trip, etc.)">
               <button type="submit" class="btn-primary" id="challanSubmit">Upload</button>
             </div>
           </form>
@@ -711,9 +711,9 @@
 
         <div class="panel">
           <div class="panel-title">Fleet roster</div>
-          <div class="panel-sub">Real — this is live now. Add a truck once here and it's on file everywhere else in the system (shift log, trip tracking, and eventually the dashboard) automatically.</div>
+          <div class="panel-sub">Real — this is live now. Add a tanker once here and it's on file everywhere else in the system (shift log, trip tracking, and eventually the dashboard) automatically.</div>
           <div style="display:flex; gap:12px; align-items:center; margin-bottom:16px;">
-            <button class="btn-primary" id="addTruckBtn" type="button">+ Add truck</button>
+            <button class="btn-primary" id="addTruckBtn" type="button">+ Add tanker</button>
             <span class="annot" id="fleetRosterCount" style="border-top:none; padding-top:0; margin-top:0;">Loading…</span>
           </div>
 
@@ -732,6 +732,10 @@
                 <input type="text" id="truckWheeler" placeholder="e.g. 10-wheeler">
               </div>
               <div class="add-truck-field">
+                <label for="truckCapacity">Capacity (KL)</label>
+                <input type="number" id="truckCapacity" placeholder="e.g. 12" min="0" step="0.1">
+              </div>
+              <div class="add-truck-field">
                 <label for="ownerType">Owner type</label>
                 <select id="ownerType">
                   <option value="driver_owned">Driver-owned</option>
@@ -747,13 +751,13 @@
                 <input type="text" id="ownerPhone" placeholder="+91 ...">
               </div>
             </div>
-            <button type="submit" class="btn-primary" id="addTruckSubmit">Save truck</button>
+            <button type="submit" class="btn-primary" id="addTruckSubmit">Save tanker</button>
             <div class="upload-status" id="addTruckStatus"></div>
           </form>
 
           <table class="data-table" id="fleetRosterTable">
-            <thead><tr><th>Reg. number</th><th>Type</th><th>Owner</th><th>Status</th></tr></thead>
-            <tbody id="fleetRosterBody"><tr><td colspan="4" style="color:var(--text-muted)">Loading…</td></tr></tbody>
+            <thead><tr><th>Reg. number</th><th>Type</th><th>Capacity (KL)</th><th>Owner</th><th>Status</th></tr></thead>
+            <tbody id="fleetRosterBody"><tr><td colspan="5" style="color:var(--text-muted)">Loading…</td></tr></tbody>
           </table>
         </div>
       </section>
@@ -768,18 +772,18 @@
           <div class="panel-sub">Real — this is live now.</div>
           <table class="data-table">
             <thead>
-              <tr><th>Truck</th><th>Driver</th><th>Departed loading site</th><th>Dumped (source)</th><th>Duration</th><th>Status</th></tr>
+              <tr><th>Tanker</th><th>Driver</th><th>Departed loading site</th><th>Dumped (source)</th><th>Duration</th><th>Status</th></tr>
             </thead>
             <tbody id="tripLogBody"><tr><td colspan="6" style="color:var(--text-muted)">Loading…</td></tr></tbody>
           </table>
-          <div class="annot">"(est.)" means the dump time is inferred from when the truck next departed — that's all we can know without GPS. Once trackers are installed, this column switches to an exact GPS-confirmed timestamp automatically; nothing else about this screen changes. Filters (by truck, driver, date range) and export-to-Excel would sit above this table in the real build.</div>
+          <div class="annot">"(est.)" means the dump time is inferred from when the tanker next departed — that's all we can know without GPS. Once trackers are installed, this column switches to an exact GPS-confirmed timestamp automatically; nothing else about this screen changes. Filters (by tanker, driver, date range) and export-to-Excel would sit above this table in the real build.</div>
         </div>
       </section>
 
       <!-- REPORTS -->
       <section class="screen" id="reports">
         <h1 class="page-title">Reports</h1>
-        <p class="page-sub">The answer to "how many trips has truck #X made this week/month" — without calling the manager.</p>
+        <p class="page-sub">The answer to "how many trips has tanker #X made this week/month" — without calling the manager.</p>
 
         <div class="panel">
           <div class="filter-row" id="reportsFilterRow">
@@ -787,11 +791,11 @@
             <button class="filter-pill active" data-range="7">Last 7 days</button>
             <button class="filter-pill" data-range="30">Last 30 days</button>
           </div>
-          <div class="panel-title" id="reportsTitle">Trips per truck — last 7 days</div>
-          <div class="panel-sub">Real — this is live now. Click a truck for its full profile.</div>
+          <div class="panel-title" id="reportsTitle">Trips per tanker — last 7 days</div>
+          <div class="panel-sub">Real — this is live now. Click a tanker for its full profile.</div>
           <table class="data-table">
             <thead>
-              <tr><th>Truck</th><th>Driver (current)</th><th>Owner</th><th>Trips today</th><th>Trips in range</th><th>Long trips (&gt;90m, in range)</th></tr>
+              <tr><th>Tanker</th><th>Driver (current)</th><th>Owner</th><th>Trips today</th><th>Trips in range</th><th>Long trips (&gt;90m, in range)</th></tr>
             </thead>
             <tbody id="reportsBody"><tr><td colspan="6" style="color:var(--text-muted)">Loading…</td></tr></tbody>
           </table>
@@ -813,21 +817,21 @@
               <tbody>
                 <tr><td>Driver present today</td><td>Manager marks login/logout once a day</td></tr>
                 <tr><td>Trip departs loading site</td><td>Manager taps "Mark departed" — one tap, no typing</td></tr>
-                <tr><td>Trip arrives/dumps at dump ground</td><td><strong>Estimated</strong> — inferred from the truck's next departure</td></tr>
-                <tr><td>Idle-truck flag</td><td>Time since last "departed" tap exceeds normal cycle time</td></tr>
+                <tr><td>Trip arrives/dumps at dump ground</td><td><strong>Estimated</strong> — inferred from the tanker's next departure</td></tr>
+                <tr><td>Idle-tanker flag</td><td>Time since last "departed" tap exceeds normal cycle time</td></tr>
               </tbody>
             </table>
           </div>
           <div class="panel">
             <div class="panel-title">Later — GPS-confirmed model</div>
-            <div class="panel-sub">Once trackers are installed on trucks (separate hardware decision, not yet started).</div>
+            <div class="panel-sub">Once trackers are installed on tankers (separate hardware decision, not yet started).</div>
             <table class="history-table">
               <thead><tr><th>Event</th><th>How it's captured</th></tr></thead>
               <tbody>
                 <tr><td>Driver present today</td><td>Same — manager marks login/logout</td></tr>
                 <tr><td>Trip departs loading site</td><td>Auto-detected by geofence — manager tap becomes a cross-check, not the source</td></tr>
                 <tr><td>Trip arrives/dumps at dump ground</td><td><strong>Exact</strong> — geofence-confirmed timestamp, no inference</td></tr>
-                <tr><td>Idle-truck flag</td><td>Real stationary-time detection, anywhere on the route — not just at the yard</td></tr>
+                <tr><td>Idle-tanker flag</td><td>Real stationary-time detection, anywhere on the route — not just at the yard</td></tr>
               </tbody>
             </table>
           </div>
@@ -951,7 +955,7 @@
       .select('id, registration_number, owners(name, owner_type, phone, payment_account)')
       .eq('id', vehicleId).single();
     if (error || !v) {
-      document.getElementById('modalVeh').textContent = 'Could not load truck details';
+      document.getElementById('modalVeh').textContent = 'Could not load tanker details';
       return;
     }
     const owner = v.owners || { name: '— not on file —', owner_type: 'driver_owned', phone: '—', payment_account: '—' };
@@ -1041,7 +1045,7 @@
         '<span class="status-pill ' + pill + '"><span class="status-dot"></span>' + label + '</span>' +
         '<div class="truck-meta">' + meta + '</div><div class="tap-hint">Tap for details →</div></button>';
     });
-    grid.innerHTML = cards.length ? cards.join('') : '<div style="color:var(--text-muted); padding:8px;">No active trucks on file yet — add one in Operations.</div>';
+    grid.innerHTML = cards.length ? cards.join('') : '<div style="color:var(--text-muted); padding:8px;">No active tankers on file yet — add one in Operations.</div>';
     grid.querySelectorAll('[data-truck]').forEach(el => el.addEventListener('click', () => openTruckModal(el.dataset.truck)));
 
     const checkedIn = Object.keys(shiftByVehicle).length + (shiftRows || []).filter(r => r.logout_time).length;
@@ -1051,10 +1055,10 @@
     document.getElementById('dashStatTrips').textContent = (todayTrips || []).filter(t => t.dumped_at).length;
     document.getElementById('dashStatTripsSub').textContent = (todayTrips || []).length + ' departures logged today';
     document.getElementById('dashStatFlagged').textContent = flaggedCount;
-    document.getElementById('dashStatFlaggedSub').textContent = flaggedCount ? 'trucks out past 90 minutes' : 'none right now';
+    document.getElementById('dashStatFlaggedSub').textContent = flaggedCount ? 'tankers out past 90 minutes' : 'none right now';
     document.getElementById('dashStatCheckedIn').textContent = (shiftRows || []).length + ' / ' + totalActive;
     document.getElementById('dashStatCheckedInSub').textContent = Math.max(0, totalActive - (shiftRows || []).length) + ' not logged in yet today';
-    document.getElementById('dashGridTitle').textContent = 'Truck status — ' + totalActive + ' active today';
+    document.getElementById('dashGridTitle').textContent = 'Tanker status — ' + totalActive + ' active today';
 
     const doneToday = (todayTrips || []).filter(t => t.dumped_at).length;
     const pct = doneToday > 0 ? 100 : 0;
@@ -1124,7 +1128,7 @@
       if ((end - dep) / 60000 > 90) b.long++;
     });
 
-    if (!vehicles.length) { tbody.innerHTML = '<tr><td colspan="6" style="color:var(--text-muted)">No trucks on file yet.</td></tr>'; return; }
+    if (!vehicles.length) { tbody.innerHTML = '<tr><td colspan="6" style="color:var(--text-muted)">No tankers on file yet.</td></tr>'; return; }
     tbody.innerHTML = vehicles.map(v => {
       const b = byVehicle[v.id] || { total: 0, today: 0, long: 0 };
       const owner = v.owners ? v.owners.name + (v.owners.owner_type === 'third_party' ? ' (third-party)' : ' (driver-owned)') : '—';
@@ -1142,7 +1146,7 @@
       p.classList.add('active');
       const days = parseInt(p.dataset.range, 10);
       document.getElementById('reportsTitle').textContent =
-        'Trips per truck — ' + (days === 1 ? 'today' : 'last ' + days + ' days');
+        'Trips per tanker — ' + (days === 1 ? 'today' : 'last ' + days + ' days');
       loadReports(days);
     });
   });
@@ -1380,21 +1384,22 @@
     const countEl = document.getElementById('fleetRosterCount');
     if (!tbody) return;
     const { data, error } = await sb.from('vehicles')
-      .select('id, registration_number, vehicle_type, wheeler_class, status, owners(name, owner_type)')
+      .select('id, registration_number, vehicle_type, wheeler_class, capacity_kl, status, owners(name, owner_type)')
       .order('created_at', { ascending: false });
     if (error || !data) {
-      tbody.innerHTML = '<tr><td colspan="4" style="color:var(--status-critical)">Could not load the roster: ' + (error ? error.message : 'unknown error') + '</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="5" style="color:var(--status-critical)">Could not load the roster: ' + (error ? error.message : 'unknown error') + '</td></tr>';
       if (countEl) countEl.textContent = '—';
       return;
     }
     if (!data.length) {
-      tbody.innerHTML = '<tr><td colspan="4" style="color:var(--text-muted)">No trucks on file yet — use "+ Add truck" above to add the first one.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="5" style="color:var(--text-muted)">No tankers on file yet — use "+ Add tanker" above to add the first one.</td></tr>';
     } else {
       tbody.innerHTML = data.map(v => {
         const owner = v.owners
           ? v.owners.name + ' <span class="owner-badge ' + (v.owners.owner_type === 'third_party' ? 'third-party">Third-party' : 'driver-owned">Driver-owned') + '</span>'
           : '—';
-        return '<tr><td>' + v.registration_number + '</td><td>' + (v.wheeler_class ? v.vehicle_type + ' · ' + v.wheeler_class : v.vehicle_type) + '</td><td>' + owner + '</td><td><span class="toggle-btn ' + (v.status === 'active' ? 'on">In service' : 'off">' + v.status) + '</span></td></tr>';
+        const capacity = v.capacity_kl != null ? v.capacity_kl : '—';
+        return '<tr><td>' + v.registration_number + '</td><td>' + (v.wheeler_class ? v.vehicle_type + ' · ' + v.wheeler_class : v.vehicle_type) + '</td><td>' + capacity + '</td><td>' + owner + '</td><td><span class="toggle-btn ' + (v.status === 'active' ? 'on">In service' : 'off">' + v.status) + '</span></td></tr>';
       }).join('');
     }
     if (countEl) {
@@ -1418,6 +1423,8 @@
       const reg = document.getElementById('truckReg').value.trim();
       const vtype = document.getElementById('truckType').value.trim() || 'tanker';
       const wheeler = document.getElementById('truckWheeler').value.trim();
+      const capacityRaw = document.getElementById('truckCapacity').value.trim();
+      const capacity = capacityRaw ? parseFloat(capacityRaw) : null;
       const ownerType = document.getElementById('ownerType').value;
       const ownerName = document.getElementById('ownerName').value.trim();
       const ownerPhone = document.getElementById('ownerPhone').value.trim();
@@ -1433,10 +1440,10 @@
         if (ownerErr) throw ownerErr;
         const { error: vehErr } = await sb.from('vehicles').insert({
           registration_number: reg, vehicle_type: vtype, wheeler_class: wheeler || null,
-          owner_id: ownerRow.id, status: 'active'
+          capacity_kl: capacity, owner_id: ownerRow.id, status: 'active'
         });
         if (vehErr) throw vehErr;
-        statusEl.textContent = 'Truck added to the roster.';
+        statusEl.textContent = 'Tanker added to the roster.';
         statusEl.className = 'upload-status ok';
         addTruckForm.reset();
         document.getElementById('truckType').value = 'tanker';
@@ -1444,10 +1451,10 @@
         loadFleetRoster();
         loadShiftFormOptions();
       } catch (err) {
-        statusEl.textContent = 'Could not add truck: ' + (err.message || 'unknown error') + (err.message && err.message.includes('row-level security') ? ' — only Manager accounts can add trucks.' : '');
+        statusEl.textContent = 'Could not add tanker: ' + (err.message || 'unknown error') + (err.message && err.message.includes('row-level security') ? ' — only Manager accounts can add tankers.' : '');
         statusEl.className = 'upload-status err';
       }
-      submitBtn.disabled = false; submitBtn.textContent = 'Save truck';
+      submitBtn.disabled = false; submitBtn.textContent = 'Save tanker';
     });
   }
 
@@ -1484,7 +1491,7 @@
     const available = (vehicles || []).filter(v => !loggedIds.has(v.id));
     vehicleSel.innerHTML = available.length
       ? available.map(v => '<option value="' + v.id + '">' + v.registration_number + '</option>').join('')
-      : '<option value="">No trucks available to log in</option>';
+      : '<option value="">No tankers available to log in</option>';
 
     const { data: drivers } = await sb.from('drivers').select('id, name').eq('active', true).order('name');
     driverSel.innerHTML = (drivers || []).map(d => '<option value="' + d.id + '">' + d.name + '</option>').join('')
@@ -1510,7 +1517,7 @@
       const serviceState = document.getElementById('shiftServiceState').value;
       const statusEl = document.getElementById('shiftLogStatus');
       const submitBtn = document.getElementById('shiftLogSubmit');
-      if (!vehicleId) { statusEl.textContent = 'No truck selected.'; statusEl.className = 'upload-status err'; return; }
+      if (!vehicleId) { statusEl.textContent = 'No tanker selected.'; statusEl.className = 'upload-status err'; return; }
       submitBtn.disabled = true; submitBtn.textContent = 'Logging in…';
       statusEl.textContent = ''; statusEl.className = 'upload-status';
       try {
@@ -1549,7 +1556,7 @@
       .order('login_time', { ascending: false });
     if (error) { tbody.innerHTML = '<tr><td colspan="6" style="color:var(--status-critical)">Could not load: ' + error.message + '</td></tr>'; return; }
     if (!data || !data.length) {
-      tbody.innerHTML = '<tr><td colspan="6" style="color:var(--text-muted)">No trucks logged in yet today.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="6" style="color:var(--text-muted)">No tankers logged in yet today.</td></tr>';
       return;
     }
     tbody.innerHTML = data.map(r =>
@@ -1579,7 +1586,7 @@
       .select('vehicle_id, driver_id, vehicles(registration_number)')
       .eq('shift_date', today);
     if (!shiftRows || !shiftRows.length) {
-      tbody.innerHTML = '<tr><td colspan="4" style="color:var(--text-muted)">No trucks logged into today\'s shift log yet — log one in above first.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="4" style="color:var(--text-muted)">No tankers logged into today\'s shift log yet — log one in above first.</td></tr>';
       return;
     }
     const { data: openTrips } = await sb.from('trips').select('id, vehicle_id, departed_at').is('dumped_at', null);
