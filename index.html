@@ -361,6 +361,7 @@
     .stat-value { font-size: 22px; }
     .panel { padding: 15px 14px; }
     .add-truck-grid { grid-template-columns: 1fr; }
+    .add-truck-grid.compact-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
     .kv-grid { grid-template-columns: 1fr; }
     .trip-summary-row { flex-wrap: wrap; }
     .trip-summary-cell { min-width: 30%; }
@@ -767,7 +768,7 @@
           <div class="panel-title">Today's shift log</div>
 
           <form class="add-truck-form" id="shiftLogForm">
-            <div class="add-truck-grid">
+            <div class="add-truck-grid compact-grid">
               <div class="add-truck-field">
                 <label for="shiftVehicleSelect">Tanker</label>
                 <select id="shiftVehicleSelect" required></select>
@@ -787,8 +788,10 @@
                   <option value="maintenance">In maintenance</option>
                 </select>
               </div>
+              <div class="add-truck-field" style="display:flex; align-items:flex-end;">
+                <button type="submit" class="btn-primary" id="shiftLogSubmit" style="width:100%;">Log in</button>
+              </div>
             </div>
-            <button type="submit" class="btn-primary" id="shiftLogSubmit">Log in</button>
             <div class="upload-status" id="shiftLogStatus"></div>
           </form>
 
