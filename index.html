@@ -919,14 +919,12 @@
       <!-- TRIP LOG -->
       <section class="screen" id="triplog">
         <h1 class="page-title">Trip Log</h1>
-        <p class="page-sub">The record every "how many trips" and payment question gets answered from. Each row is built from one manager tap — "Departed" — that closes the previous trip and opens the next.</p>
 
         <div class="panel">
           <div class="panel-head-row">
             <div class="panel-title" style="margin-bottom:0;">All trips</div>
             <button class="btn-primary" id="tripLogExportBtn" type="button">⬇ Export to Excel</button>
           </div>
-          <div class="panel-sub">Real — this is live now. A busy day can run 50-60+ trips, so filter by date, tanker, driver, or status instead of scrolling. Export downloads exactly what's shown below, with your filters applied.</div>
           <div class="trip-log-filters">
             <div class="add-truck-field">
               <label for="tripLogDate">Date</label>
@@ -1517,7 +1515,7 @@
         '<td class="num">' + durCell + '</td><td>' + statusCell + '</td></tr>';
     }).join('');
     if (countEl) {
-      countEl.textContent = rows.length + ' trip' + (rows.length === 1 ? '' : 's') + ' match the current filters. "(est.)" means the dump time is inferred from when the tanker next departed — once trackers are installed this switches to an exact GPS-confirmed timestamp automatically.';
+      countEl.textContent = rows.length + ' trip' + (rows.length === 1 ? '' : 's') + ' match the current filters.';
     }
   }
 
