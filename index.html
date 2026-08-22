@@ -832,6 +832,7 @@
           <div class="annot" id="fleetRosterCount" style="border-top:none; padding-top:0; margin-bottom:16px;">Loading…</div>
 
           <form class="add-truck-form" id="addTruckForm" style="display:none;">
+            <input type="hidden" id="truckEditId" value="">
             <div class="add-truck-grid">
               <div class="add-truck-field">
                 <label for="truckReg">Registration number</label>
@@ -870,8 +871,8 @@
           </form>
 
           <table class="data-table" id="fleetRosterTable">
-            <thead><tr><th>Reg. number</th><th>Capacity (KL)</th><th>Owner</th><th>Status</th><th>Documents</th></tr></thead>
-            <tbody id="fleetRosterBody"><tr><td colspan="5" style="color:var(--text-muted)">Loading…</td></tr></tbody>
+            <thead><tr><th>Reg. number</th><th>Capacity (KL)</th><th>Owner</th><th>Status</th><th>Documents</th><th>Actions</th></tr></thead>
+            <tbody id="fleetRosterBody"><tr><td colspan="6" style="color:var(--text-muted)">Loading…</td></tr></tbody>
           </table>
         </div>
 
@@ -882,6 +883,7 @@
           </div>
 
           <form class="add-truck-form" id="addDriverForm" style="display:none;">
+            <input type="hidden" id="driverEditId" value="">
             <div class="add-truck-grid">
               <div class="add-truck-field">
                 <label for="driverName">Name</label>
@@ -905,8 +907,8 @@
           </form>
 
           <table class="data-table" id="driversTable">
-            <thead><tr><th>Name</th><th>Documents</th></tr></thead>
-            <tbody id="driversBody"><tr><td colspan="2" style="color:var(--text-muted)">Loading…</td></tr></tbody>
+            <thead><tr><th>Name</th><th>Documents</th><th>Actions</th></tr></thead>
+            <tbody id="driversBody"><tr><td colspan="3" style="color:var(--text-muted)">Loading…</td></tr></tbody>
           </table>
         </div>
       </section>
@@ -2091,23 +2093,52 @@
   }
 
   // ----- Drivers (Manager) -----
+  let driversData = [];
   async function loadDrivers() {
     const tbody = document.getElementById('driversBody');
     if (!tbody) return;
-    const { data, error } = await sb.from('drivers').select('id, name').eq('active', true).order('name');
-    if (error || !data) { tbody.innerHTML = '<tr><td colspan="2" style="color:var(--status-critical)">Could not load drivers.</td></tr>'; return; }
-    if (!data.length) { tbody.innerHTML = '<tr><td colspan="2" style="color:var(--text-muted)">No drivers on file yet — use "+ Add driver" above, or they\'re added automatically the first time you log one into a shift.</td></tr>'; return; }
+    const { data, error } = await sb.from('drivers').select('id, name, phone, active').order('name');
+    if (error || !data) { tbody.innerHTML = '<tr><td colspan="3" style="color:var(--status-critical)">Could not load drivers.</td></tr>'; return; }
+    driversData = data;
+    if (!data.length) { tbody.innerHTML = '<tr><td colspan="3" style="color:var(--text-muted)">No drivers on file yet — use "+ Add driver" above, or they\'re added automatically the first time you log one into a shift.</td></tr>'; return; }
     tbody.innerHTML = data.map(d =>
-      '<tr><td>' + d.name + '</td><td><button class="btn-primary" data-open-docs="' + d.id + '" data-label="' + d.name + '" type="button">Docs</button></td></tr>'
+      '<tr><td>' + d.name + (d.active ? '' : ' <span class="toggle-btn off">Inactive</span>') + '</td>' +
+      '<td><button class="btn-primary" data-open-docs="' + d.id + '" data-label="' + d.name + '" type="button">Docs</button></td>' +
+      '<td><button class="btn-ghost-sm" data-edit-driver="' + d.id + '" type="button">Edit</button> <button class="btn-ghost-sm" data-toggle-driver="' + d.id + '" data-next-active="' + (!d.active) + '" type="button">' + (d.active ? 'Deactivate' : 'Reactivate') + '</button></td></tr>'
     ).join('');
     tbody.querySelectorAll('[data-open-docs]').forEach(btn => btn.addEventListener('click', () => openDocsModal('driver', btn.dataset.openDocs, btn.dataset.label)));
+    tbody.querySelectorAll('[data-edit-driver]').forEach(btn => btn.addEventListener('click', () => openDriverEditForm(btn.dataset.editDriver)));
+    tbody.querySelectorAll('[data-toggle-driver]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const nextActive = btn.dataset.nextActive === 'true';
+        if (!nextActive && !confirm('Deactivate this driver? They will no longer appear in shift log dropdowns, but their trip history stays intact.')) return;
+        btn.disabled = true;
+        const { error } = await sb.from('drivers').update({ active: nextActive }).eq('id', btn.dataset.toggleDriver);
+        if (error) { alert('Could not update driver: ' + error.message); btn.disabled = false; return; }
+        loadDrivers();
+        loadShiftFormOptions();
+      });
+    });
+  }
+
+  function openDriverEditForm(driverId) {
+    const d = driversData.find(x => x.id === driverId);
+    if (!d) return;
+    document.getElementById('driverEditId').value = d.id;
+    document.getElementById('driverName').value = d.name || '';
+    document.getElementById('driverPhone').value = d.phone || '';
+    document.getElementById('addDriverSubmit').textContent = 'Save changes';
+    document.getElementById('addDriverForm').style.display = 'block';
+    document.getElementById('addDriverForm').scrollIntoView({ behavior: 'smooth', block: 'center' });
   }
 
   const addDriverBtn = document.getElementById('addDriverBtn');
   if (addDriverBtn) {
     addDriverBtn.addEventListener('click', () => {
       const f = document.getElementById('addDriverForm');
-      f.style.display = f.style.display === 'none' ? 'block' : 'none';
+      const opening = f.style.display === 'none';
+      if (opening) { f.reset(); document.getElementById('driverEditId').value = ''; document.getElementById('addDriverSubmit').textContent = 'Save driver'; }
+      f.style.display = opening ? 'block' : 'none';
     });
   }
 
@@ -2121,15 +2152,22 @@
       const licenseFile = document.getElementById('driverLicense').files[0];
       const statusEl = document.getElementById('addDriverStatus');
       const submitBtn = document.getElementById('addDriverSubmit');
+      const editId = document.getElementById('driverEditId').value;
       if (!name) return;
-      submitBtn.disabled = true; submitBtn.textContent = 'Adding…';
+      submitBtn.disabled = true; submitBtn.textContent = editId ? 'Saving…' : 'Adding…';
       statusEl.textContent = ''; statusEl.className = 'upload-status';
       try {
-        const { data: driverRow, error: dErr } = await sb.from('drivers')
-          .insert({ name, phone: phone || null, active: true })
-          .select('id').single();
-        if (dErr) throw dErr;
-        const driverId = driverRow.id;
+        let driverId = editId;
+        if (editId) {
+          const { error: dErr } = await sb.from('drivers').update({ name, phone: phone || null }).eq('id', editId);
+          if (dErr) throw dErr;
+        } else {
+          const { data: driverRow, error: dErr } = await sb.from('drivers')
+            .insert({ name, phone: phone || null, active: true })
+            .select('id').single();
+          if (dErr) throw dErr;
+          driverId = driverRow.id;
+        }
 
         async function uploadDriverDoc(file, docType) {
           if (!file) return;
@@ -2145,45 +2183,61 @@
         await uploadDriverDoc(aadharFile, 'aadhar');
         await uploadDriverDoc(licenseFile, 'license');
 
-        statusEl.textContent = 'Driver added.';
+        statusEl.textContent = editId ? 'Driver updated.' : 'Driver added.';
         statusEl.className = 'upload-status ok';
         addDriverForm.reset();
+        document.getElementById('driverEditId').value = '';
         addDriverForm.style.display = 'none';
         loadDrivers();
         loadShiftFormOptions();
       } catch (err) {
-        statusEl.textContent = 'Could not add driver: ' + (err.message || 'unknown error') + (err.message && err.message.includes('row-level security') ? ' — only Manager accounts can add drivers.' : '');
+        statusEl.textContent = 'Could not save driver: ' + (err.message || 'unknown error') + (err.message && err.message.includes('row-level security') ? ' — only Manager accounts can edit drivers.' : '');
         statusEl.className = 'upload-status err';
       }
-      submitBtn.disabled = false; submitBtn.textContent = 'Save driver';
+      submitBtn.disabled = false; submitBtn.textContent = editId ? 'Save changes' : 'Save driver';
     });
   }
 
   // ----- Fleet roster (Manager) -----
+  let fleetRosterData = [];
   async function loadFleetRoster() {
     const tbody = document.getElementById('fleetRosterBody');
     const countEl = document.getElementById('fleetRosterCount');
     if (!tbody) return;
     const { data, error } = await sb.from('vehicles')
-      .select('id, registration_number, vehicle_type, wheeler_class, capacity_kl, status, owners(name, owner_type)')
+      .select('id, registration_number, vehicle_type, wheeler_class, capacity_kl, status, owner_id, owners(name, owner_type, phone)')
       .order('created_at', { ascending: false });
     if (error || !data) {
-      tbody.innerHTML = '<tr><td colspan="5" style="color:var(--status-critical)">Could not load the roster: ' + (error ? error.message : 'unknown error') + '</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="6" style="color:var(--status-critical)">Could not load the roster: ' + (error ? error.message : 'unknown error') + '</td></tr>';
       if (countEl) countEl.textContent = '—';
       return;
     }
+    fleetRosterData = data;
     if (!data.length) {
-      tbody.innerHTML = '<tr><td colspan="5" style="color:var(--text-muted)">No tankers on file yet — use "+ Add tanker" above to add the first one.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="6" style="color:var(--text-muted)">No tankers on file yet — use "+ Add tanker" above to add the first one.</td></tr>';
     } else {
       tbody.innerHTML = data.map(v => {
         const owner = v.owners
           ? v.owners.name + ' <span class="owner-badge ' + (v.owners.owner_type === 'third_party' ? 'third-party">Third-party' : 'driver-owned">Driver-owned') + '</span>'
           : '—';
         const capacity = v.capacity_kl != null ? v.capacity_kl : '—';
-        return '<tr><td>' + v.registration_number + '</td><td>' + capacity + '</td><td>' + owner + '</td><td><span class="toggle-btn ' + (v.status === 'active' ? 'on">In service' : 'off">' + v.status) + '</span></td>' +
-          '<td><button class="btn-primary" data-open-docs="' + v.id + '" data-label="' + v.registration_number + '" type="button">Docs</button></td></tr>';
+        const retired = v.status !== 'active';
+        return '<tr><td>' + v.registration_number + '</td><td>' + capacity + '</td><td>' + owner + '</td><td><span class="toggle-btn ' + (retired ? 'off">Retired' : 'on">In service') + '</span></td>' +
+          '<td><button class="btn-primary" data-open-docs="' + v.id + '" data-label="' + v.registration_number + '" type="button">Docs</button></td>' +
+          '<td><button class="btn-ghost-sm" data-edit-vehicle="' + v.id + '" type="button">Edit</button> <button class="btn-ghost-sm" data-toggle-vehicle="' + v.id + '" data-next-status="' + (retired ? 'active' : 'retired') + '" type="button">' + (retired ? 'Reactivate' : 'Retire') + '</button></td></tr>';
       }).join('');
       tbody.querySelectorAll('[data-open-docs]').forEach(btn => btn.addEventListener('click', () => openDocsModal('vehicle', btn.dataset.openDocs, btn.dataset.label)));
+      tbody.querySelectorAll('[data-edit-vehicle]').forEach(btn => btn.addEventListener('click', () => openTruckEditForm(btn.dataset.editVehicle)));
+      tbody.querySelectorAll('[data-toggle-vehicle]').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          if (btn.dataset.nextStatus === 'retired' && !confirm('Retire this tanker? It will no longer appear in shift log / trip tracking dropdowns, but its trip history stays intact.')) return;
+          btn.disabled = true;
+          const { error } = await sb.from('vehicles').update({ status: btn.dataset.nextStatus }).eq('id', btn.dataset.toggleVehicle);
+          if (error) { alert('Could not update status: ' + error.message); btn.disabled = false; return; }
+          loadFleetRoster();
+          loadShiftFormOptions();
+        });
+      });
     }
     if (countEl) {
       const active = data.filter(v => v.status === 'active').length;
@@ -2191,11 +2245,29 @@
     }
   }
 
+  function openTruckEditForm(vehicleId) {
+    const v = fleetRosterData.find(x => x.id === vehicleId);
+    if (!v) return;
+    document.getElementById('truckEditId').value = v.id;
+    document.getElementById('truckReg').value = v.registration_number || '';
+    document.getElementById('truckType').value = v.vehicle_type || 'tanker';
+    document.getElementById('truckWheeler').value = v.wheeler_class || '';
+    document.getElementById('truckCapacity').value = v.capacity_kl != null ? v.capacity_kl : '';
+    document.getElementById('ownerType').value = v.owners && v.owners.owner_type === 'third_party' ? 'third_party' : 'driver_owned';
+    document.getElementById('ownerName').value = v.owners ? v.owners.name : '';
+    document.getElementById('ownerPhone').value = v.owners && v.owners.phone ? v.owners.phone : '';
+    document.getElementById('addTruckSubmit').textContent = 'Save changes';
+    document.getElementById('addTruckForm').style.display = 'block';
+    document.getElementById('addTruckForm').scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+
   const addTruckBtn = document.getElementById('addTruckBtn');
   if (addTruckBtn) {
     addTruckBtn.addEventListener('click', () => {
       const f = document.getElementById('addTruckForm');
-      f.style.display = f.style.display === 'none' ? 'block' : 'none';
+      const opening = f.style.display === 'none';
+      if (opening) { f.reset(); document.getElementById('truckEditId').value = ''; document.getElementById('truckType').value = 'tanker'; document.getElementById('addTruckSubmit').textContent = 'Save tanker'; }
+      f.style.display = opening ? 'block' : 'none';
     });
   }
 
@@ -2213,31 +2285,48 @@
       const ownerPhone = document.getElementById('ownerPhone').value.trim();
       const statusEl = document.getElementById('addTruckStatus');
       const submitBtn = document.getElementById('addTruckSubmit');
+      const editId = document.getElementById('truckEditId').value;
       if (!reg || !ownerName) return;
-      submitBtn.disabled = true; submitBtn.textContent = 'Adding…';
+      submitBtn.disabled = true; submitBtn.textContent = editId ? 'Saving…' : 'Adding…';
       statusEl.textContent = ''; statusEl.className = 'upload-status';
       try {
-        const { data: ownerRow, error: ownerErr } = await sb.from('owners')
-          .insert({ name: ownerName, phone: ownerPhone || null, owner_type: ownerType })
-          .select('id').single();
-        if (ownerErr) throw ownerErr;
-        const { error: vehErr } = await sb.from('vehicles').insert({
-          registration_number: reg, vehicle_type: vtype, wheeler_class: wheeler || null,
-          capacity_kl: capacity, owner_id: ownerRow.id, status: 'active'
-        });
-        if (vehErr) throw vehErr;
-        statusEl.textContent = 'Tanker added to the roster.';
+        if (editId) {
+          const existing = fleetRosterData.find(x => x.id === editId);
+          if (existing && existing.owner_id) {
+            const { error: ownerErr } = await sb.from('owners')
+              .update({ name: ownerName, phone: ownerPhone || null, owner_type: ownerType })
+              .eq('id', existing.owner_id);
+            if (ownerErr) throw ownerErr;
+          }
+          const { error: vehErr } = await sb.from('vehicles').update({
+            registration_number: reg, vehicle_type: vtype, wheeler_class: wheeler || null, capacity_kl: capacity
+          }).eq('id', editId);
+          if (vehErr) throw vehErr;
+          statusEl.textContent = 'Tanker updated.';
+        } else {
+          const { data: ownerRow, error: ownerErr } = await sb.from('owners')
+            .insert({ name: ownerName, phone: ownerPhone || null, owner_type: ownerType })
+            .select('id').single();
+          if (ownerErr) throw ownerErr;
+          const { error: vehErr } = await sb.from('vehicles').insert({
+            registration_number: reg, vehicle_type: vtype, wheeler_class: wheeler || null,
+            capacity_kl: capacity, owner_id: ownerRow.id, status: 'active'
+          });
+          if (vehErr) throw vehErr;
+          statusEl.textContent = 'Tanker added to the roster.';
+        }
         statusEl.className = 'upload-status ok';
         addTruckForm.reset();
+        document.getElementById('truckEditId').value = '';
         document.getElementById('truckType').value = 'tanker';
         addTruckForm.style.display = 'none';
         loadFleetRoster();
         loadShiftFormOptions();
       } catch (err) {
-        statusEl.textContent = 'Could not add tanker: ' + (err.message || 'unknown error') + (err.message && err.message.includes('row-level security') ? ' — only Manager accounts can add tankers.' : '');
+        statusEl.textContent = 'Could not save tanker: ' + (err.message || 'unknown error') + (err.message && err.message.includes('row-level security') ? ' — only Manager accounts can edit tankers.' : '');
         statusEl.className = 'upload-status err';
       }
-      submitBtn.disabled = false; submitBtn.textContent = 'Save tanker';
+      submitBtn.disabled = false; submitBtn.textContent = editId ? 'Save changes' : 'Save tanker';
     });
   }
 
