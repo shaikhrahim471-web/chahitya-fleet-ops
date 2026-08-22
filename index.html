@@ -328,6 +328,11 @@
   .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
   .table-scroll table.data-table { min-width: 560px; }
   .table-scroll #driversTable { min-width: 0; }
+  .veh-row { cursor: pointer; }
+  .veh-row:hover { background: var(--page-plane); }
+  .veh-row .row-expand-hint { color: var(--text-muted); font-size: 10px; margin-left: 4px; }
+  .veh-detail-row td { background: var(--page-plane); }
+  .veh-detail-row table.data-table { background: transparent; }
 
   @media (max-width: 780px) {
     .app-shell { flex-direction: column; }
@@ -1940,17 +1945,6 @@
     document.getElementById('settingsKebabMenu').classList.remove('open');
   });
 
-  // ----- Challans due (Manager) — every completed trip needs its challan tied to it -----
-  async function loadChallanDueTrips() {
-    const since = new Date(Date.now() - 30 * 86400000).toISOString();
-    const { data: completedTrips } = await sb.from('trips')
-      .select('id, vehicle_id, driver_id, departed_at, vehicles(registration_number), drivers(name)')
-      .eq('status', 'completed').gte('departed_at', since).order('departed_at', { ascending: true });
-    const { data: existingChallans } = await sb.from('challans').select('trip_id').not('trip_id', 'is', null);
-    const linked = new Set((existingChallans || []).map(c => c.trip_id));
-    return (completedTrips || []).filter(t => !linked.has(t.id));
-  }
-
   let currentChallanTrip = null; // { id, existing: {id, file_path} | null, refresh }
   function openChallanUploadModal(tripId, vehLabel, existing, refresh) {
     currentChallanTrip = { id: tripId, existing: existing || null, refresh: refresh || loadTripTracking };
@@ -2371,9 +2365,6 @@
     const tbody = document.getElementById('tripTrackingBody');
     if (!tbody) return;
     const today = todayStr();
-    const missingChallans = await loadChallanDueTrips();
-    const dueTripsByVehicle = {};
-    missingChallans.forEach(t => { (dueTripsByVehicle[t.vehicle_id] = dueTripsByVehicle[t.vehicle_id] || []).push(t); });
 
     const { data: shiftRows } = await sb.from('shift_logs')
       .select('vehicle_id, driver_id, vehicles(registration_number)')
@@ -2383,35 +2374,80 @@
       return;
     }
     const { data: openTrips } = await sb.from('trips').select('id, vehicle_id, departed_at').is('dumped_at', null);
-    const { data: todayTrips } = await sb.from('trips').select('vehicle_id').gte('departed_at', today + 'T00:00:00.000Z');
+    const { data: todayTrips } = await sb.from('trips').select('id, vehicle_id, departed_at, dumped_at').gte('departed_at', today + 'T00:00:00.000Z').order('departed_at', { ascending: false });
     const openByVehicle = {};
     (openTrips || []).forEach(t => { openByVehicle[t.vehicle_id] = t; });
-    const countByVehicle = {};
-    (todayTrips || []).forEach(t => { countByVehicle[t.vehicle_id] = (countByVehicle[t.vehicle_id] || 0) + 1; });
+    const tripsByVehicle = {};
+    (todayTrips || []).forEach(t => { (tripsByVehicle[t.vehicle_id] = tripsByVehicle[t.vehicle_id] || []).push(t); });
+
+    const todayTripIds = (todayTrips || []).map(t => t.id);
+    let challanByTrip = {};
+    if (todayTripIds.length) {
+      const { data: todayChallans } = await sb.from('challans').select('id, trip_id, file_path').in('trip_id', todayTripIds);
+      (todayChallans || []).forEach(c => { challanByTrip[c.trip_id] = c; });
+    }
 
     tbody.innerHTML = shiftRows.map(r => {
       const open = openByVehicle[r.vehicle_id];
-      const count = countByVehicle[r.vehicle_id] || 0;
+      const trips = tripsByVehicle[r.vehicle_id] || [];
+      const uploadedCount = trips.filter(t => challanByTrip[t.id]).length;
       const statusHtml = open
         ? '<span class="status-pill working"><span class="status-dot"></span>Out — departed ' + fmtTime(open.departed_at) + '</span>'
         : '<span class="status-pill off"><span class="status-dot"></span>At yard — ready to load</span>';
-      const dueTrips = dueTripsByVehicle[r.vehicle_id] || [];
       const veh = r.vehicles ? r.vehicles.registration_number : '—';
-      const challanHtml = dueTrips.length
-        ? '<button class="btn-ghost-sm" data-attach-challan="' + dueTrips[0].id + '" data-veh="' + veh + '" type="button">Attach' + (dueTrips.length > 1 ? ' (' + dueTrips.length + ' due)' : '') + '</button>'
+      const challanHtml = trips.length
+        ? uploadedCount + '/' + trips.length + ' uploaded'
         : '<span style="color:var(--text-muted); font-size:12px;">—</span>';
-      return '<tr><td>' + veh + '</td>' +
-        '<td>' + statusHtml + '</td>' +
-        '<td class="num">' + count + '</td>' +
-        '<td>' + challanHtml + '</td>' +
-        '<td>' +
-          '<button class="btn-primary" data-mark-departed="' + r.vehicle_id + '" data-driver="' + r.driver_id + '">Mark departed</button>' +
-          (open ? ' <button class="btn-ghost-sm" data-mark-returned="' + r.vehicle_id + '" data-trip="' + open.id + '">Mark returned</button>' : '') +
-        '</td></tr>';
+      const detailRows = trips.length ? trips.map(t => {
+        const dep = fmtTime(t.departed_at);
+        const dumpedCell = t.dumped_at ? fmtTime(t.dumped_at) : '<span style="color:var(--text-muted);">in progress</span>';
+        const c = challanByTrip[t.id];
+        const challanCell = c
+          ? '<a href="#" data-view-challan="' + c.file_path + '">View</a> · <a href="#" data-replace-challan="' + t.id + '" data-existing-id="' + c.id + '" data-existing-path="' + c.file_path + '" data-veh="' + veh + '">Replace</a>'
+          : '<a href="#" data-replace-challan="' + t.id + '" data-veh="' + veh + '">Attach</a>';
+        return '<tr><td class="num">' + dep + '</td><td class="num">' + dumpedCell + '</td><td>' + challanCell + '</td></tr>';
+      }).join('') : '<tr><td colspan="3" style="color:var(--text-muted);">No trips today yet.</td></tr>';
+      return '<tr class="veh-row" data-toggle-trips="' + r.vehicle_id + '">' +
+          '<td>' + veh + ' <span class="row-expand-hint">▾</span></td>' +
+          '<td>' + statusHtml + '</td>' +
+          '<td class="num">' + trips.length + '</td>' +
+          '<td>' + challanHtml + '</td>' +
+          '<td>' +
+            '<button class="btn-primary" data-mark-departed="' + r.vehicle_id + '" data-driver="' + r.driver_id + '">Mark departed</button>' +
+            (open ? ' <button class="btn-ghost-sm" data-mark-returned="' + r.vehicle_id + '" data-trip="' + open.id + '">Mark returned</button>' : '') +
+          '</td>' +
+        '</tr>' +
+        '<tr class="veh-detail-row" data-trip-detail="' + r.vehicle_id + '" style="display:none;">' +
+          '<td colspan="5" style="padding:0;">' +
+            '<table class="data-table" style="margin:0;"><thead><tr><th>Departed</th><th>Dumped</th><th>Challan</th></tr></thead><tbody>' + detailRows + '</tbody></table>' +
+          '</td>' +
+        '</tr>';
     }).join('');
 
-    tbody.querySelectorAll('[data-attach-challan]').forEach(btn => {
-      btn.addEventListener('click', () => openChallanUploadModal(btn.dataset.attachChallan, btn.dataset.veh, null, loadTripTracking));
+    tbody.querySelectorAll('.veh-row').forEach(row => {
+      row.addEventListener('click', (e) => {
+        if (e.target.closest('button, a')) return;
+        const detail = tbody.querySelector('[data-trip-detail="' + row.dataset.toggleTrips + '"]');
+        if (!detail) return;
+        const opening = detail.style.display === 'none';
+        detail.style.display = opening ? 'table-row' : 'none';
+        row.querySelector('.row-expand-hint').textContent = opening ? '▴' : '▾';
+      });
+    });
+    tbody.querySelectorAll('[data-view-challan]').forEach(a => {
+      a.addEventListener('click', async (e) => {
+        e.preventDefault();
+        const { data, error } = await sb.storage.from('challans').createSignedUrl(a.dataset.viewChallan, 300);
+        if (error) { alert('Could not open challan: ' + error.message); return; }
+        window.open(data.signedUrl, '_blank');
+      });
+    });
+    tbody.querySelectorAll('[data-replace-challan]').forEach(a => {
+      a.addEventListener('click', (e) => {
+        e.preventDefault();
+        const existing = a.dataset.existingId ? { id: a.dataset.existingId, file_path: a.dataset.existingPath } : null;
+        openChallanUploadModal(a.dataset.replaceChallan, a.dataset.veh, existing, loadTripTracking);
+      });
     });
 
     tbody.querySelectorAll('[data-mark-departed]').forEach(btn => {
