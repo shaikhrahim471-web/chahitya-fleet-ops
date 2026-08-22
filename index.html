@@ -813,16 +813,6 @@
           </table>
           <div class="annot" id="tripTrackingStatus"></div>
         </div>
-
-        <div class="panel">
-          <div class="panel-title">Challans due</div>
-          <table class="data-table">
-            <thead>
-              <tr><th>Tanker</th><th>Driver</th><th>Departed</th><th>Action</th></tr>
-            </thead>
-            <tbody id="challansDueBody"><tr><td colspan="4" style="color:var(--text-muted)">Loading…</td></tr></tbody>
-          </table>
-        </div>
       </section>
 
       <!-- FLEET & DRIVERS -->
@@ -1961,20 +1951,6 @@
     return (completedTrips || []).filter(t => !linked.has(t.id));
   }
 
-  function renderChallansDue(missing) {
-    const dueBody = document.getElementById('challansDueBody');
-    if (!dueBody) return;
-    dueBody.innerHTML = missing.length ? missing.map(t =>
-      '<tr><td>' + (t.vehicles ? t.vehicles.registration_number : '—') + '</td>' +
-      '<td>' + (t.drivers ? t.drivers.name : '—') + '</td>' +
-      '<td class="num">' + fmtWhen(t.departed_at) + '</td>' +
-      '<td><button class="btn-primary" data-attach-challan="' + t.id + '" data-veh="' + (t.vehicles ? t.vehicles.registration_number : '') + '" type="button">Attach challan</button></td></tr>'
-    ).join('') : '<tr><td colspan="4" style="color:var(--text-muted)">Nothing outstanding — every completed trip in the last 30 days has its challan attached.</td></tr>';
-    dueBody.querySelectorAll('[data-attach-challan]').forEach(btn => {
-      btn.addEventListener('click', () => openChallanUploadModal(btn.dataset.attachChallan, btn.dataset.veh));
-    });
-  }
-
   let currentChallanTrip = null; // { id, existing: {id, file_path} | null, refresh }
   function openChallanUploadModal(tripId, vehLabel, existing, refresh) {
     currentChallanTrip = { id: tripId, existing: existing || null, refresh: refresh || loadTripTracking };
@@ -2396,9 +2372,8 @@
     if (!tbody) return;
     const today = todayStr();
     const missingChallans = await loadChallanDueTrips();
-    renderChallansDue(missingChallans);
-    const dueCountByVehicle = {};
-    missingChallans.forEach(t => { dueCountByVehicle[t.vehicle_id] = (dueCountByVehicle[t.vehicle_id] || 0) + 1; });
+    const dueTripsByVehicle = {};
+    missingChallans.forEach(t => { (dueTripsByVehicle[t.vehicle_id] = dueTripsByVehicle[t.vehicle_id] || []).push(t); });
 
     const { data: shiftRows } = await sb.from('shift_logs')
       .select('vehicle_id, driver_id, vehicles(registration_number)')
@@ -2420,11 +2395,12 @@
       const statusHtml = open
         ? '<span class="status-pill working"><span class="status-dot"></span>Out — departed ' + fmtTime(open.departed_at) + '</span>'
         : '<span class="status-pill off"><span class="status-dot"></span>At yard — ready to load</span>';
-      const due = dueCountByVehicle[r.vehicle_id] || 0;
-      const challanHtml = due
-        ? '<span class="status-pill flagged"><span class="status-dot"></span>' + due + ' due</span>'
+      const dueTrips = dueTripsByVehicle[r.vehicle_id] || [];
+      const veh = r.vehicles ? r.vehicles.registration_number : '—';
+      const challanHtml = dueTrips.length
+        ? '<button class="btn-ghost-sm" data-attach-challan="' + dueTrips[0].id + '" data-veh="' + veh + '" type="button">Attach' + (dueTrips.length > 1 ? ' (' + dueTrips.length + ' due)' : '') + '</button>'
         : '<span style="color:var(--text-muted); font-size:12px;">—</span>';
-      return '<tr><td>' + (r.vehicles ? r.vehicles.registration_number : '—') + '</td>' +
+      return '<tr><td>' + veh + '</td>' +
         '<td>' + statusHtml + '</td>' +
         '<td class="num">' + count + '</td>' +
         '<td>' + challanHtml + '</td>' +
@@ -2433,6 +2409,10 @@
           (open ? ' <button class="btn-ghost-sm" data-mark-returned="' + r.vehicle_id + '" data-trip="' + open.id + '">Mark returned</button>' : '') +
         '</td></tr>';
     }).join('');
+
+    tbody.querySelectorAll('[data-attach-challan]').forEach(btn => {
+      btn.addEventListener('click', () => openChallanUploadModal(btn.dataset.attachChallan, btn.dataset.veh, null, loadTripTracking));
+    });
 
     tbody.querySelectorAll('[data-mark-departed]').forEach(btn => {
       btn.addEventListener('click', async () => {
