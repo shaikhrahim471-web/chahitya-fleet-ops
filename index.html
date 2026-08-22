@@ -953,9 +953,9 @@
           </div>
           <table class="data-table">
             <thead>
-              <tr><th>Tanker</th><th>Driver</th><th>Departed loading site</th><th>Dumped (source)</th><th>Duration</th><th>Status</th></tr>
+              <tr><th>Tanker</th><th>Driver</th><th>Departed loading site</th><th>Dumped (source)</th><th>Duration</th><th>Status</th><th>Challan</th></tr>
             </thead>
-            <tbody id="tripLogBody"><tr><td colspan="6" style="color:var(--text-muted)">Loading…</td></tr></tbody>
+            <tbody id="tripLogBody"><tr><td colspan="7" style="color:var(--text-muted)">Loading…</td></tr></tbody>
           </table>
           <div class="annot" id="tripLogCount">"(est.)" means the dump time is inferred from when the tanker next departed — that's all we can know without GPS. Once trackers are installed, this column switches to an exact GPS-confirmed timestamp automatically; nothing else about this screen changes.</div>
         </div>
@@ -1483,7 +1483,7 @@
 
     const { data, error } = await query;
     const countEl = document.getElementById('tripLogCount');
-    if (error) { tbody.innerHTML = '<tr><td colspan="6" style="color:var(--status-critical)">Could not load: ' + error.message + '</td></tr>'; return; }
+    if (error) { tbody.innerHTML = '<tr><td colspan="7" style="color:var(--status-critical)">Could not load: ' + error.message + '</td></tr>'; return; }
     const now = Date.now();
     let rows = data || [];
     rows = rows.map(t => {
@@ -1496,10 +1496,16 @@
     currentTripLogRows = rows;
 
     if (!rows.length) {
-      tbody.innerHTML = '<tr><td colspan="6" style="color:var(--text-muted)">No trips match these filters.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="7" style="color:var(--text-muted)">No trips match these filters.</td></tr>';
       if (countEl) countEl.textContent = '0 trips match the current filters.';
       return;
     }
+
+    const tripIds = rows.map(r => r.t.id);
+    const { data: challanRows } = await sb.from('challans').select('id, trip_id, file_path').in('trip_id', tripIds);
+    const challanByTrip = {};
+    (challanRows || []).forEach(c => { challanByTrip[c.trip_id] = c; });
+
     tbody.innerHTML = rows.map(({ t, dumped, durMin, flagged }) => {
       const dumpedCell = dumped
         ? fmtTime(t.dumped_at) + ' <span style="color:var(--text-muted); font-weight:400;">(' + (t.dumped_at_source === 'estimated' ? 'est. — next departure' : 'GPS') + ')</span>'
@@ -1510,13 +1516,33 @@
         : dumped
           ? '<span class="status-pill working"><span class="status-dot"></span>Completed</span>'
           : '<span class="status-pill idle"><span class="status-dot"></span>In progress</span>';
+      const challan = challanByTrip[t.id];
+      const challanCell = challan
+        ? '<a href="#" data-view-challan="' + challan.file_path + '">View</a>' + (currentUser && currentUser.role === 'manager' ? ' · <a href="#" data-replace-challan="' + t.id + '" data-existing-id="' + challan.id + '" data-existing-path="' + challan.file_path + '" data-veh="' + (t.vehicles ? t.vehicles.registration_number : '') + '">Replace</a>' : '')
+        : (currentUser && currentUser.role === 'manager' ? '<a href="#" data-replace-challan="' + t.id + '" data-veh="' + (t.vehicles ? t.vehicles.registration_number : '') + '">Attach</a>' : '<span style="color:var(--text-muted);">—</span>');
       return '<tr><td>' + (t.vehicles ? t.vehicles.registration_number : '—') + '</td><td>' + (t.drivers ? t.drivers.name : '—') + '</td>' +
         '<td class="num">' + fmtTime(t.departed_at) + '</td><td class="num">' + dumpedCell + '</td>' +
-        '<td class="num">' + durCell + '</td><td>' + statusCell + '</td></tr>';
+        '<td class="num">' + durCell + '</td><td>' + statusCell + '</td><td>' + challanCell + '</td></tr>';
     }).join('');
     if (countEl) {
       countEl.textContent = rows.length + ' trip' + (rows.length === 1 ? '' : 's') + ' match the current filters.';
     }
+
+    tbody.querySelectorAll('[data-view-challan]').forEach(a => {
+      a.addEventListener('click', async (e) => {
+        e.preventDefault();
+        const { data, error } = await sb.storage.from('challans').createSignedUrl(a.dataset.viewChallan, 300);
+        if (error) { alert('Could not open challan: ' + error.message); return; }
+        window.open(data.signedUrl, '_blank');
+      });
+    });
+    tbody.querySelectorAll('[data-replace-challan]').forEach(a => {
+      a.addEventListener('click', (e) => {
+        e.preventDefault();
+        const existing = a.dataset.existingId ? { id: a.dataset.existingId, file_path: a.dataset.existingPath } : null;
+        openChallanUploadModal(a.dataset.replaceChallan, a.dataset.veh, existing, loadTripLog);
+      });
+    });
   }
 
   ['tripLogDate', 'tripLogVehicleFilter', 'tripLogDriverFilter', 'tripLogStatusFilter'].forEach(id => {
@@ -1949,13 +1975,15 @@
     });
   }
 
-  let currentChallanTrip = null; // { id, vehicleId }
-  function openChallanUploadModal(tripId, vehLabel) {
-    currentChallanTrip = { id: tripId };
+  let currentChallanTrip = null; // { id, existing: {id, file_path} | null, refresh }
+  function openChallanUploadModal(tripId, vehLabel, existing, refresh) {
+    currentChallanTrip = { id: tripId, existing: existing || null, refresh: refresh || loadTripTracking };
     document.getElementById('challanModalTitle').textContent = vehLabel || 'Attach challan';
+    document.getElementById('challanModalSub').textContent = existing ? 'Replace the challan attached to this trip' : 'Attach challan to this trip';
     document.getElementById('challanUploadForm').reset();
     document.getElementById('challanUploadStatus').textContent = '';
     document.getElementById('challanUploadStatus').className = 'upload-status';
+    document.getElementById('challanUploadSubmit').textContent = existing ? 'Replace challan' : 'Save challan';
     document.getElementById('challanUploadModal').classList.add('open');
   }
   function closeChallanUploadModal() {
@@ -1987,19 +2015,25 @@
         submitBtn.disabled = false; submitBtn.textContent = 'Save challan';
         return;
       }
+      const existing = currentChallanTrip.existing;
+      const refresh = currentChallanTrip.refresh;
       const { error: insErr } = await sb.from('challans').insert({
         file_path: path, uploaded_by: currentUser.id, trip_id: currentChallanTrip.id, note: note || null
       });
-      submitBtn.disabled = false; submitBtn.textContent = 'Save challan';
+      submitBtn.disabled = false; submitBtn.textContent = existing ? 'Replace challan' : 'Save challan';
       if (insErr) {
         statusEl.textContent = 'Saved the photo, but couldn\'t record it: ' + insErr.message;
         statusEl.className = 'upload-status err';
         return;
       }
-      statusEl.textContent = 'Challan attached.';
+      if (existing) {
+        await sb.from('challans').delete().eq('id', existing.id);
+        await sb.storage.from('challans').remove([existing.file_path]);
+      }
+      statusEl.textContent = existing ? 'Challan replaced.' : 'Challan attached.';
       statusEl.className = 'upload-status ok';
       closeChallanUploadModal();
-      await loadTripTracking();
+      await refresh();
     });
   }
 
