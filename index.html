@@ -327,6 +327,7 @@
   /* ===== Mobile layout ===== */
   .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
   .table-scroll table.data-table { min-width: 560px; }
+  .table-scroll #driversTable { min-width: 0; }
 
   @media (max-width: 780px) {
     .app-shell { flex-direction: column; }
@@ -871,8 +872,8 @@
           </form>
 
           <table class="data-table" id="fleetRosterTable">
-            <thead><tr><th>Reg. number</th><th>Type</th><th>Capacity (KL)</th><th>Owner</th><th>Status</th><th>Documents</th></tr></thead>
-            <tbody id="fleetRosterBody"><tr><td colspan="6" style="color:var(--text-muted)">Loading…</td></tr></tbody>
+            <thead><tr><th>Reg. number</th><th>Capacity (KL)</th><th>Owner</th><th>Status</th><th>Documents</th></tr></thead>
+            <tbody id="fleetRosterBody"><tr><td colspan="5" style="color:var(--text-muted)">Loading…</td></tr></tbody>
           </table>
         </div>
 
@@ -2162,19 +2163,19 @@
       .select('id, registration_number, vehicle_type, wheeler_class, capacity_kl, status, owners(name, owner_type)')
       .order('created_at', { ascending: false });
     if (error || !data) {
-      tbody.innerHTML = '<tr><td colspan="6" style="color:var(--status-critical)">Could not load the roster: ' + (error ? error.message : 'unknown error') + '</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="5" style="color:var(--status-critical)">Could not load the roster: ' + (error ? error.message : 'unknown error') + '</td></tr>';
       if (countEl) countEl.textContent = '—';
       return;
     }
     if (!data.length) {
-      tbody.innerHTML = '<tr><td colspan="6" style="color:var(--text-muted)">No tankers on file yet — use "+ Add tanker" above to add the first one.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="5" style="color:var(--text-muted)">No tankers on file yet — use "+ Add tanker" above to add the first one.</td></tr>';
     } else {
       tbody.innerHTML = data.map(v => {
         const owner = v.owners
           ? v.owners.name + ' <span class="owner-badge ' + (v.owners.owner_type === 'third_party' ? 'third-party">Third-party' : 'driver-owned">Driver-owned') + '</span>'
           : '—';
         const capacity = v.capacity_kl != null ? v.capacity_kl : '—';
-        return '<tr><td>' + v.registration_number + '</td><td>' + (v.wheeler_class ? v.vehicle_type + ' · ' + v.wheeler_class : v.vehicle_type) + '</td><td>' + capacity + '</td><td>' + owner + '</td><td><span class="toggle-btn ' + (v.status === 'active' ? 'on">In service' : 'off">' + v.status) + '</span></td>' +
+        return '<tr><td>' + v.registration_number + '</td><td>' + capacity + '</td><td>' + owner + '</td><td><span class="toggle-btn ' + (v.status === 'active' ? 'on">In service' : 'off">' + v.status) + '</span></td>' +
           '<td><button class="btn-primary" data-open-docs="' + v.id + '" data-label="' + v.registration_number + '" type="button">Docs</button></td></tr>';
       }).join('');
       tbody.querySelectorAll('[data-open-docs]').forEach(btn => btn.addEventListener('click', () => openDocsModal('vehicle', btn.dataset.openDocs, btn.dataset.label)));
