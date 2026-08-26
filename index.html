@@ -821,6 +821,7 @@
       <!-- FLEET & DRIVERS -->
       <section class="screen" id="fleet">
         <h1 class="page-title">Fleet &amp; Drivers</h1>
+        <p class="page-sub" id="fleetDriversSummary">Loading…</p>
 
         <div class="panel">
           <div class="panel-head-row" style="margin-bottom:16px;">
@@ -2093,6 +2094,21 @@
     });
   }
 
+  // ----- Fleet & Drivers summary strip (Manager) -----
+  const fleetDriversLoaded = { fleet: false, drivers: false };
+  function updateFleetDriversSummary() {
+    const el = document.getElementById('fleetDriversSummary');
+    if (!el || !fleetDriversLoaded.fleet || !fleetDriversLoaded.drivers) return;
+    const tankers = fleetRosterData.length;
+    const activeTankers = fleetRosterData.filter(v => v.status === 'active').length;
+    const drivers = driversData.length;
+    const activeDrivers = driversData.filter(d => d.active).length;
+    const owners = new Set(fleetRosterData.map(v => v.owner_id).filter(Boolean)).size;
+    el.textContent = tankers + ' tanker' + (tankers === 1 ? '' : 's') + ' (' + activeTankers + ' active) · ' +
+      drivers + ' driver' + (drivers === 1 ? '' : 's') + ' (' + activeDrivers + ' active) · ' +
+      owners + ' owner' + (owners === 1 ? '' : 's');
+  }
+
   // ----- Drivers (Manager) -----
   let driversData = [];
   async function loadDrivers() {
@@ -2101,6 +2117,8 @@
     const { data, error } = await sb.from('drivers').select('id, name, phone, active').order('name');
     if (error || !data) { tbody.innerHTML = '<tr><td colspan="3" style="color:var(--status-critical)">Could not load drivers.</td></tr>'; return; }
     driversData = data;
+    fleetDriversLoaded.drivers = true;
+    updateFleetDriversSummary();
     if (!data.length) { tbody.innerHTML = '<tr><td colspan="3" style="color:var(--text-muted)">No drivers on file yet — use "+ Add driver" above, or they\'re added automatically the first time you log one into a shift.</td></tr>'; return; }
     tbody.innerHTML = data.map(d =>
       '<tr><td>' + d.name + (d.active ? '' : ' <span class="toggle-btn off">Inactive</span>') + '</td>' +
@@ -2214,6 +2232,8 @@
       return;
     }
     fleetRosterData = data;
+    fleetDriversLoaded.fleet = true;
+    updateFleetDriversSummary();
     if (!data.length) {
       tbody.innerHTML = '<tr><td colspan="6" style="color:var(--text-muted)">No tankers on file yet — use "+ Add tanker" above to add the first one.</td></tr>';
     } else {
