@@ -705,7 +705,6 @@
       <!-- DASHBOARD -->
       <section class="screen active" id="dashboard">
         <h1 class="page-title">Fleet Overview</h1>
-        <p class="page-sub">What the Director sees first — today, at a glance.</p>
 
         <div class="stat-row" id="dashStatRow">
           <button type="button" class="stat-tile accent-good stat-tile-clickable" data-stat="out">
@@ -718,6 +717,7 @@
             <div class="stat-label">Trips completed today</div>
             <div class="stat-value" id="dashStatTrips">—</div>
             <div class="stat-delta" id="dashStatTripsSub">Loading…</div>
+            <div class="stat-delta" id="dashStatTripsAllTime" style="opacity:0.7;">—</div>
             <div class="tap-hint">Tap for details →</div>
           </button>
           <button type="button" class="stat-tile accent-critical stat-tile-clickable" data-stat="flagged">
@@ -752,13 +752,11 @@
         <div class="two-col">
           <div class="panel">
             <div class="panel-title" id="dashGridTitle">Tanker status — today</div>
-            <div class="panel-sub">Real — this is live now. Color = current state. Click a tanker to see its driver, owner, and trip history. This grid is driven by however many tankers are on the roster — add or retire one in Operations and it appears/disappears here automatically, no rebuild needed.</div>
             <div class="truck-grid" id="dashTruckGrid"><div style="color:var(--text-muted); padding:8px;">Loading…</div></div>
           </div>
 
           <div class="panel">
             <div class="panel-title">Trips today</div>
-            <div class="panel-sub">Only one loading site exists right now, so this is fleet-wide. The moment a second site goes live, this panel splits into one bar per site automatically — same as the tanker grid scales with fleet size.</div>
             <div class="site-bars" id="dashSiteBars"><div style="color:var(--text-muted); padding:8px;">Loading…</div></div>
             <div class="annot" id="dashSiteAnnot">"Departed" taps today should track closely with completed trips — a big gap between taps and completions is itself a useful signal worth a second look.</div>
           </div>
@@ -1326,6 +1324,9 @@
     document.getElementById('dashStatOutSub').textContent = (totalActive - outCount) + ' at yard, off, or unlogged';
     document.getElementById('dashStatTrips').textContent = (todayTrips || []).filter(t => t.dumped_at).length;
     document.getElementById('dashStatTripsSub').textContent = (todayTrips || []).length + ' departures logged today';
+    sb.from('trips').select('id', { count: 'exact', head: true }).then(({ count }) => {
+      document.getElementById('dashStatTripsAllTime').textContent = (count != null ? count.toLocaleString() : '—') + ' all-time';
+    });
     document.getElementById('dashStatFlagged').textContent = flaggedCount;
     document.getElementById('dashStatFlaggedSub').textContent = flaggedCount ? 'tankers out past 90 minutes' : 'none right now';
     document.getElementById('dashStatCheckedIn').textContent = (shiftRows || []).length + ' / ' + totalActive;
