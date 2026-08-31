@@ -62,7 +62,7 @@
     -webkit-font-smoothing: antialiased;
   }
   h1, h2, h3, .page-title, .topbar-title, .panel-title, .brand-name, .login-title,
-  .stat-value, .modal-head .veh-num, .topbar-clock .clock-time { font-family: var(--font-disp); }
+  .stat-value, .modal-head .veh-num { font-family: var(--font-disp); }
 
   /* ===== Top notice strip ===== */
   .notice-stack { position: sticky; top: 0; z-index: 40; }
@@ -135,9 +135,6 @@
   .topbar-title { font-size: 15px; font-weight: 700; }
   .topbar-title .dim { font-weight: 400; color: var(--text-muted); font-size: 12.5px; margin-top: 1px; }
 
-  .topbar-clock { text-align: center; }
-  .topbar-clock .clock-time { font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; }
-  .topbar-clock .clock-date { font-size: 12.5px; font-weight: 600; color: var(--text-secondary); margin-top: 1px; }
 
   .role-switch { display: flex; align-items: center; gap: 8px; }
   .role-switch > span { font-size: 11.5px; color: var(--text-muted); }
@@ -355,9 +352,6 @@
     .notice { padding: 8px 14px; font-size: 11.5px; }
     .topbar { padding: 10px 14px; flex-wrap: wrap; gap: 8px; }
     .topbar-title { font-size: 14px; }
-    .topbar-clock { order: 3; width: 100%; text-align: left; }
-    .topbar-clock .clock-time { font-size: 13px; }
-    .topbar-clock .clock-date { font-size: 11.5px; }
     h1.page-title { font-size: 18px; }
     p.page-sub { margin-bottom: 16px; }
     main { padding: 14px 12px 50px; }
@@ -680,10 +674,6 @@
     <header class="topbar">
       <div class="topbar-title">
         <div id="topbarWelcome">Welcome</div>
-      </div>
-      <div class="topbar-clock" id="topbarClock">
-        <div class="clock-time" id="clockTime">—</div>
-        <div class="clock-date" id="clockDate">—</div>
       </div>
       <div class="user-chip">
         <div class="notif-wrap">
@@ -1698,18 +1688,6 @@
       showScreen(firstVisible);
     }
   }
-
-  // ----- Topbar clock + date (always on, 12-hour format) -----
-  function updateTopbarClock() {
-    const timeEl = document.getElementById('clockTime');
-    const dateEl = document.getElementById('clockDate');
-    if (!timeEl || !dateEl) return;
-    const now = new Date();
-    timeEl.textContent = now.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: true });
-    dateEl.textContent = now.toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
-  }
-  updateTopbarClock();
-  setInterval(updateTopbarClock, 1000);
 </script>
 
 <!-- ===== Real backend: auth, settings data, challan upload ===== -->
