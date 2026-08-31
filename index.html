@@ -2123,10 +2123,32 @@
     tbody.innerHTML = data.map(d =>
       '<tr><td>' + d.name + (d.active ? '' : ' <span class="toggle-btn off">Inactive</span>') + '</td>' +
       '<td><button class="btn-primary" data-open-docs="' + d.id + '" data-label="' + d.name + '" type="button">Docs</button></td>' +
-      '<td><button class="btn-ghost-sm" data-edit-driver="' + d.id + '" type="button">Edit</button> <button class="btn-ghost-sm" data-toggle-driver="' + d.id + '" data-next-active="' + (!d.active) + '" type="button">' + (d.active ? 'Deactivate' : 'Reactivate') + '</button></td></tr>'
+      '<td><button class="btn-ghost-sm" data-edit-driver="' + d.id + '" type="button">Edit</button> <button class="btn-ghost-sm" data-toggle-driver="' + d.id + '" data-next-active="' + (!d.active) + '" type="button">' + (d.active ? 'Deactivate' : 'Reactivate') + '</button> <button class="btn-ghost-sm" data-delete-driver="' + d.id + '" data-label="' + d.name + '" type="button" style="color:var(--status-critical);">Delete</button></td></tr>'
     ).join('');
     tbody.querySelectorAll('[data-open-docs]').forEach(btn => btn.addEventListener('click', () => openDocsModal('driver', btn.dataset.openDocs, btn.dataset.label)));
     tbody.querySelectorAll('[data-edit-driver]').forEach(btn => btn.addEventListener('click', () => openDriverEditForm(btn.dataset.editDriver)));
+    tbody.querySelectorAll('[data-delete-driver]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        if (!confirm('Permanently delete driver "' + btn.dataset.label + '"? This cannot be undone. Only works if this driver has no shift log or trip history — if they do, use Deactivate instead.')) return;
+        btn.disabled = true; btn.textContent = 'Deleting…';
+        const driverId = btn.dataset.deleteDriver;
+        const { data: docs } = await sb.from('documents').select('id, file_path').eq('entity_type', 'driver').eq('entity_id', driverId);
+        if (docs && docs.length) {
+          await sb.storage.from('documents').remove(docs.map(d => d.file_path));
+          await sb.from('documents').delete().eq('entity_type', 'driver').eq('entity_id', driverId);
+        }
+        const { error } = await sb.from('drivers').delete().eq('id', driverId);
+        if (error) {
+          const blocked = error.message && (error.message.includes('foreign key') || error.message.includes('violates'));
+          alert(blocked
+            ? 'Can\'t delete — this driver has shift log or trip history on file. Use Deactivate instead to remove them from active lists while keeping that history.'
+            : 'Could not delete driver: ' + error.message);
+          btn.disabled = false; btn.textContent = 'Delete';
+          return;
+        }
+        loadDrivers();
+      });
+    });
     tbody.querySelectorAll('[data-toggle-driver]').forEach(btn => {
       btn.addEventListener('click', async () => {
         const nextActive = btn.dataset.nextActive === 'true';
@@ -2245,10 +2267,33 @@
         const retired = v.status !== 'active';
         return '<tr><td>' + v.registration_number + '</td><td>' + capacity + '</td><td>' + owner + '</td><td><span class="toggle-btn ' + (retired ? 'off">Retired' : 'on">In service') + '</span></td>' +
           '<td><button class="btn-primary" data-open-docs="' + v.id + '" data-label="' + v.registration_number + '" type="button">Docs</button></td>' +
-          '<td><button class="btn-ghost-sm" data-edit-vehicle="' + v.id + '" type="button">Edit</button> <button class="btn-ghost-sm" data-toggle-vehicle="' + v.id + '" data-next-status="' + (retired ? 'active' : 'retired') + '" type="button">' + (retired ? 'Reactivate' : 'Retire') + '</button></td></tr>';
+          '<td><button class="btn-ghost-sm" data-edit-vehicle="' + v.id + '" type="button">Edit</button> <button class="btn-ghost-sm" data-toggle-vehicle="' + v.id + '" data-next-status="' + (retired ? 'active' : 'retired') + '" type="button">' + (retired ? 'Reactivate' : 'Retire') + '</button> <button class="btn-ghost-sm" data-delete-vehicle="' + v.id + '" data-label="' + v.registration_number + '" type="button" style="color:var(--status-critical);">Delete</button></td></tr>';
       }).join('');
       tbody.querySelectorAll('[data-open-docs]').forEach(btn => btn.addEventListener('click', () => openDocsModal('vehicle', btn.dataset.openDocs, btn.dataset.label)));
       tbody.querySelectorAll('[data-edit-vehicle]').forEach(btn => btn.addEventListener('click', () => openTruckEditForm(btn.dataset.editVehicle)));
+      tbody.querySelectorAll('[data-delete-vehicle]').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          if (!confirm('Permanently delete tanker "' + btn.dataset.label + '"? This cannot be undone. Only works if this tanker has no shift log or trip history — if it does, use Retire instead.')) return;
+          btn.disabled = true; btn.textContent = 'Deleting…';
+          const vehicleId = btn.dataset.deleteVehicle;
+          const { data: docs } = await sb.from('documents').select('id, file_path').eq('entity_type', 'vehicle').eq('entity_id', vehicleId);
+          if (docs && docs.length) {
+            await sb.storage.from('documents').remove(docs.map(d => d.file_path));
+            await sb.from('documents').delete().eq('entity_type', 'vehicle').eq('entity_id', vehicleId);
+          }
+          const { error } = await sb.from('vehicles').delete().eq('id', vehicleId);
+          if (error) {
+            const blocked = error.message && (error.message.includes('foreign key') || error.message.includes('violates'));
+            alert(blocked
+              ? 'Can\'t delete — this tanker has shift log or trip history on file. Use Retire instead to remove it from active lists while keeping that history.'
+              : 'Could not delete tanker: ' + error.message);
+            btn.disabled = false; btn.textContent = 'Delete';
+            return;
+          }
+          loadFleetRoster();
+          loadShiftFormOptions();
+        });
+      });
       tbody.querySelectorAll('[data-toggle-vehicle]').forEach(btn => {
         btn.addEventListener('click', async () => {
           if (btn.dataset.nextStatus === 'retired' && !confirm('Retire this tanker? It will no longer appear in shift log / trip tracking dropdowns, but its trip history stays intact.')) return;
