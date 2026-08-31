@@ -1334,7 +1334,10 @@
 
     const doneToday = (todayTrips || []).filter(t => t.dumped_at).length;
     const pct = doneToday > 0 ? 100 : 0;
-    bars.innerHTML = '<div class="site-bar-row"><span class="name">Loading Site 1</span><div class="site-bar-track"><div class="site-bar-fill" style="width:' + pct + '%;"></div></div><span class="count">' + doneToday + '</span></div>';
+    const { data: activeSites } = await sb.from('sites').select('name').eq('active', true).order('created_at');
+    bars.innerHTML = (activeSites && activeSites.length ? activeSites : [{ name: 'Loading site' }]).map(s =>
+      '<div class="site-bar-row"><span class="name">' + s.name + '</span><div class="site-bar-track"><div class="site-bar-fill" style="width:' + pct + '%;"></div></div><span class="count">' + doneToday + '</span></div>'
+    ).join('');
     document.getElementById('dashSiteAnnot').textContent =
       '"Departed" taps today (' + (todayTrips || []).length + ') should track closely with completed trips (' + doneToday + ') — a big gap between taps and completions is itself a useful signal worth a second look.';
   }
@@ -2398,7 +2401,7 @@
     if (LOADING_SITE_ID) return LOADING_SITE_ID;
     const { data } = await sb.from('sites').select('id').eq('site_type', 'loading').eq('active', true).order('created_at').limit(1);
     if (data && data.length) { LOADING_SITE_ID = data[0].id; return LOADING_SITE_ID; }
-    const { data: created, error } = await sb.from('sites').insert({ name: 'Loading Site 1', site_type: 'loading', active: true }).select('id').single();
+    const { data: created, error } = await sb.from('sites').insert({ name: 'Mazgaon Docks', site_type: 'loading', active: true }).select('id').single();
     if (error) throw error;
     LOADING_SITE_ID = created.id;
     return LOADING_SITE_ID;
