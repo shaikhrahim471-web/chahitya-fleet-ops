@@ -166,6 +166,8 @@
   .stat-row > * {
     min-width: 0;
   }
+  .cash-stat-row { grid-template-columns: repeat(3, 1fr); }
+  @media (max-width: 900px) { .cash-stat-row { grid-template-columns: 1fr 1fr; } }
   .stat-tile {
     background: var(--surface-1);
     border: 1px solid var(--border);
@@ -361,6 +363,7 @@
     p.page-sub { margin-bottom: 16px; }
     main { padding: 14px 12px 50px; }
     .stat-row { grid-template-columns: 1fr 1fr; gap: 8px; }
+    .cash-stat-row { grid-template-columns: 1fr; }
     .stat-tile { padding: 12px 13px; }
     .stat-value { font-size: 22px; }
     .panel { padding: 15px 14px; }
@@ -1012,7 +1015,7 @@
       <section class="screen" id="cash">
         <h1 class="page-title">Cash</h1>
 
-        <div class="stat-row" style="grid-template-columns:1fr 1fr 1fr;">
+        <div class="stat-row cash-stat-row">
           <div class="stat-tile">
             <div class="stat-label">Float in today</div>
             <div class="stat-value" id="cashFloatToday">—</div>
