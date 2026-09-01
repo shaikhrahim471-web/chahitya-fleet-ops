@@ -663,6 +663,10 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><rect x="7" y="12" width="3" height="6"/><rect x="12.5" y="8" width="3" height="10"/><rect x="18" y="5" width="3" height="13"/></svg>
         Reports
       </button>
+      <button class="tab-btn" data-screen="cash" data-roles="boss,manager" data-title="Cash">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="3"/><path d="M6 9v.01M18 15v.01"/></svg>
+        Cash
+      </button>
       <button class="tab-btn" data-screen="roadmap" data-roles="boss,manager" data-title="Roadmap">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 21V4l4-1 8 2 4-1v13l-4 1-8-2-4 1Z"/><path d="M8 3v14M16 5v14"/></svg>
         Roadmap
@@ -998,6 +1002,70 @@
             </div>
           </div>
           <div class="annot">Sorted highest to lowest. A driver or tanker with zero trips in range still appears, so someone sitting idle shows up immediately.</div>
+        </div>
+      </section>
+
+      <!-- CASH -->
+      <section class="screen" id="cash">
+        <h1 class="page-title">Cash</h1>
+
+        <div class="stat-row" style="grid-template-columns:1fr 1fr 1fr;">
+          <div class="stat-tile">
+            <div class="stat-label">Float in today</div>
+            <div class="stat-value" id="cashFloatToday">—</div>
+          </div>
+          <div class="stat-tile">
+            <div class="stat-label">Spent today</div>
+            <div class="stat-value" id="cashSpentToday">—</div>
+          </div>
+          <div class="stat-tile accent-blue">
+            <div class="stat-label">Balance today</div>
+            <div class="stat-value" id="cashBalanceToday">—</div>
+          </div>
+        </div>
+
+        <div class="panel" id="cashManagerPanel" style="display:none;">
+          <div class="panel-title">Log entry</div>
+          <form class="add-truck-form" id="cashEntryForm">
+            <div class="add-truck-grid compact-grid">
+              <div class="add-truck-field">
+                <label for="cashType">Type</label>
+                <select id="cashType">
+                  <option value="expense">Expense</option>
+                  <option value="float_in">Float in</option>
+                </select>
+              </div>
+              <div class="add-truck-field" id="cashCategoryField">
+                <label for="cashCategory">Category</label>
+                <select id="cashCategory">
+                  <option value="fuel">Fuel</option>
+                  <option value="toll">Toll</option>
+                  <option value="driver_payment">Driver payment</option>
+                  <option value="repair">Repair / wear &amp; tear</option>
+                  <option value="owner_payment">Owner payment</option>
+                  <option value="other">Other</option>
+                </select>
+              </div>
+              <div class="add-truck-field">
+                <label for="cashAmount">Amount (₹)</label>
+                <input type="number" id="cashAmount" min="1" step="1" required>
+              </div>
+              <div class="add-truck-field">
+                <label for="cashNote">Note (optional)</label>
+                <input type="text" id="cashNote" placeholder="e.g. Diesel — MH12AB1234">
+              </div>
+            </div>
+            <button type="submit" class="btn-primary" id="cashEntrySubmit">Log entry</button>
+            <div class="upload-status" id="cashEntryStatus"></div>
+          </form>
+        </div>
+
+        <div class="panel">
+          <div class="panel-title">Today's entries</div>
+          <table class="data-table">
+            <thead><tr><th>Time</th><th>Type</th><th>Category</th><th class="num">Amount</th><th>Note</th><th>By</th></tr></thead>
+            <tbody id="cashEntriesBody"><tr><td colspan="6" style="color:var(--text-muted)">Loading…</td></tr></tbody>
+          </table>
         </div>
       </section>
 
@@ -1756,6 +1824,7 @@
     showApp();
     if (currentUser.role === 'boss') { loadSettingsData(); loadDashboard(); loadReports(7); loadFleetUtilization(7); }
     if (currentUser.role === 'manager') { loadFleetRoster(); loadDrivers(); loadShiftFormOptions(); loadShiftLog(); loadTripTracking(); loadDashboard(); }
+    loadCashEntries();
     await loadTripLogFilterOptions();
     loadTripLog();
     refreshNotifBadge();
@@ -2641,6 +2710,78 @@
           btn.disabled = false; btn.textContent = 'Mark returned';
         }
       });
+    });
+  }
+
+  // ----- Cash ledger — daily float in / expenses, both roles read, Manager writes -----
+  const CASH_CATEGORY_LABELS = {
+    fuel: 'Fuel', toll: 'Toll', driver_payment: 'Driver payment', repair: 'Repair / wear & tear',
+    owner_payment: 'Owner payment', other: 'Other'
+  };
+  function fmtRupees(n) { return '₹' + Math.round(n).toLocaleString('en-IN'); }
+
+  async function loadCashEntries() {
+    const tbody = document.getElementById('cashEntriesBody');
+    if (!tbody) return;
+    if (currentUser && currentUser.role === 'manager') {
+      document.getElementById('cashManagerPanel').style.display = 'block';
+    }
+    const today = todayStr();
+    const { data, error } = await sb.from('cash_entries')
+      .select('id, type, category, amount, note, created_at, app_users(name)')
+      .eq('entry_date', today).order('created_at', { ascending: false });
+    if (error || !data) { tbody.innerHTML = '<tr><td colspan="6" style="color:var(--status-critical)">Could not load: ' + (error ? error.message : 'unknown error') + '</td></tr>'; return; }
+
+    const floatIn = data.filter(e => e.type === 'float_in').reduce((s, e) => s + Number(e.amount), 0);
+    const spent = data.filter(e => e.type === 'expense').reduce((s, e) => s + Number(e.amount), 0);
+    document.getElementById('cashFloatToday').textContent = fmtRupees(floatIn);
+    document.getElementById('cashSpentToday').textContent = fmtRupees(spent);
+    document.getElementById('cashBalanceToday').textContent = fmtRupees(floatIn - spent);
+
+    tbody.innerHTML = data.length ? data.map(e =>
+      '<tr><td class="num">' + fmtTime(e.created_at) + '</td>' +
+      '<td>' + (e.type === 'float_in' ? 'Float in' : 'Expense') + '</td>' +
+      '<td>' + (e.category ? CASH_CATEGORY_LABELS[e.category] || e.category : '—') + '</td>' +
+      '<td class="num">' + fmtRupees(e.amount) + '</td>' +
+      '<td>' + (e.note || '—') + '</td>' +
+      '<td>' + (e.app_users ? e.app_users.name : '—') + '</td></tr>'
+    ).join('') : '<tr><td colspan="6" style="color:var(--text-muted)">No entries logged yet today.</td></tr>';
+  }
+
+  const cashTypeSelect = document.getElementById('cashType');
+  if (cashTypeSelect) {
+    cashTypeSelect.addEventListener('change', () => {
+      document.getElementById('cashCategoryField').style.display = cashTypeSelect.value === 'float_in' ? 'none' : '';
+    });
+  }
+
+  const cashEntryForm = document.getElementById('cashEntryForm');
+  if (cashEntryForm) {
+    cashEntryForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const type = document.getElementById('cashType').value;
+      const category = type === 'expense' ? document.getElementById('cashCategory').value : null;
+      const amount = parseFloat(document.getElementById('cashAmount').value);
+      const note = document.getElementById('cashNote').value.trim();
+      const statusEl = document.getElementById('cashEntryStatus');
+      const submitBtn = document.getElementById('cashEntrySubmit');
+      if (!amount || amount <= 0 || !currentUser) return;
+      submitBtn.disabled = true; submitBtn.textContent = 'Logging…';
+      statusEl.textContent = ''; statusEl.className = 'upload-status';
+      const { error } = await sb.from('cash_entries').insert({
+        type, category, amount, note: note || null, recorded_by: currentUser.id
+      });
+      submitBtn.disabled = false; submitBtn.textContent = 'Log entry';
+      if (error) {
+        statusEl.textContent = 'Could not log entry: ' + error.message;
+        statusEl.className = 'upload-status err';
+        return;
+      }
+      statusEl.textContent = 'Entry logged.';
+      statusEl.className = 'upload-status ok';
+      cashEntryForm.reset();
+      document.getElementById('cashCategoryField').style.display = '';
+      loadCashEntries();
     });
   }
 
