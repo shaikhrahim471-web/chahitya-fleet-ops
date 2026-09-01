@@ -1063,8 +1063,8 @@
         <div class="panel">
           <div class="panel-title">Today's entries</div>
           <table class="data-table">
-            <thead><tr><th>Time</th><th>Type</th><th>Category</th><th class="num">Amount</th><th>Note</th><th>By</th></tr></thead>
-            <tbody id="cashEntriesBody"><tr><td colspan="6" style="color:var(--text-muted)">Loading…</td></tr></tbody>
+            <thead><tr><th>Time</th><th>Type</th><th>Category</th><th class="num">Amount</th><th>Note</th><th>By</th><th>Action</th></tr></thead>
+            <tbody id="cashEntriesBody"><tr><td colspan="7" style="color:var(--text-muted)">Loading…</td></tr></tbody>
           </table>
         </div>
       </section>
@@ -2728,24 +2728,44 @@
     }
     const today = todayStr();
     const { data, error } = await sb.from('cash_entries')
-      .select('id, type, category, amount, note, created_at, app_users(name)')
+      .select('id, type, category, amount, note, created_at, deleted_at, app_users(name)')
       .eq('entry_date', today).order('created_at', { ascending: false });
-    if (error || !data) { tbody.innerHTML = '<tr><td colspan="6" style="color:var(--status-critical)">Could not load: ' + (error ? error.message : 'unknown error') + '</td></tr>'; return; }
+    if (error || !data) { tbody.innerHTML = '<tr><td colspan="7" style="color:var(--status-critical)">Could not load: ' + (error ? error.message : 'unknown error') + '</td></tr>'; return; }
 
-    const floatIn = data.filter(e => e.type === 'float_in').reduce((s, e) => s + Number(e.amount), 0);
-    const spent = data.filter(e => e.type === 'expense').reduce((s, e) => s + Number(e.amount), 0);
+    const live = data.filter(e => !e.deleted_at);
+    const floatIn = live.filter(e => e.type === 'float_in').reduce((s, e) => s + Number(e.amount), 0);
+    const spent = live.filter(e => e.type === 'expense').reduce((s, e) => s + Number(e.amount), 0);
     document.getElementById('cashFloatToday').textContent = fmtRupees(floatIn);
     document.getElementById('cashSpentToday').textContent = fmtRupees(spent);
     document.getElementById('cashBalanceToday').textContent = fmtRupees(floatIn - spent);
 
-    tbody.innerHTML = data.length ? data.map(e =>
-      '<tr><td class="num">' + fmtTime(e.created_at) + '</td>' +
-      '<td>' + (e.type === 'float_in' ? 'Float in' : 'Expense') + '</td>' +
-      '<td>' + (e.category ? CASH_CATEGORY_LABELS[e.category] || e.category : '—') + '</td>' +
-      '<td class="num">' + fmtRupees(e.amount) + '</td>' +
-      '<td>' + (e.note || '—') + '</td>' +
-      '<td>' + (e.app_users ? e.app_users.name : '—') + '</td></tr>'
-    ).join('') : '<tr><td colspan="6" style="color:var(--text-muted)">No entries logged yet today.</td></tr>';
+    const isManager = currentUser && currentUser.role === 'manager';
+    tbody.innerHTML = data.length ? data.map(e => {
+      const del = !!e.deleted_at;
+      const style = del ? ' style="text-decoration:line-through; color:var(--text-muted);"' : '';
+      const actionCell = del
+        ? '<span style="color:var(--text-muted); font-size:11px;">Deleted</span>'
+        : (isManager ? '<button class="btn-ghost-sm" data-delete-cash="' + e.id + '" type="button" style="color:var(--status-critical);" aria-label="Delete entry" title="Delete entry">🗑</button>' : '—');
+      return '<tr' + style + '><td class="num">' + fmtTime(e.created_at) + '</td>' +
+        '<td>' + (e.type === 'float_in' ? 'Float in' : 'Expense') + '</td>' +
+        '<td>' + (e.category ? CASH_CATEGORY_LABELS[e.category] || e.category : '—') + '</td>' +
+        '<td class="num">' + fmtRupees(e.amount) + '</td>' +
+        '<td>' + (e.note || '—') + '</td>' +
+        '<td>' + (e.app_users ? e.app_users.name : '—') + '</td>' +
+        '<td>' + actionCell + '</td></tr>';
+    }).join('') : '<tr><td colspan="7" style="color:var(--text-muted)">No entries logged yet today.</td></tr>';
+
+    tbody.querySelectorAll('[data-delete-cash]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        if (!confirm('Delete this entry? It stays visible (marked Deleted) and drops out of the running balance — it is not erased.')) return;
+        btn.disabled = true;
+        const { error } = await sb.from('cash_entries').update({
+          deleted_at: new Date().toISOString(), deleted_by: currentUser.id
+        }).eq('id', btn.dataset.deleteCash);
+        if (error) { alert('Could not delete entry: ' + error.message); btn.disabled = false; return; }
+        loadCashEntries();
+      });
+    });
   }
 
   const cashTypeSelect = document.getElementById('cashType');
