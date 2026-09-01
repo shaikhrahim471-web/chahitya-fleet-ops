@@ -116,6 +116,7 @@
     padding: 9px 10px; border-radius: var(--radius-sm); cursor: pointer;
     width: 100%;
   }
+  .tab-label-short { display: none; }
   .tab-btn svg { width: 17px; height: 17px; flex-shrink: 0; opacity: 0.85; }
   .tab-btn:hover { background: var(--page-plane); color: var(--text-primary); }
   .tab-btn.active {
@@ -349,7 +350,9 @@
     .fleet-tag { display: none; }
     .side-nav { flex-direction: row; flex: 1; gap: 3px; overflow-x: auto; padding-bottom: 2px; min-width: 0; }
     .side-nav-label { display: none; }
-    .tab-btn { flex-direction: column; gap: 3px; font-size: 10px; padding: 6px 9px; white-space: normal; width: 112px; flex-shrink: 0; text-align: center; }
+    .tab-label-full { display: none; }
+    .tab-label-short { display: inline; }
+    .tab-btn { flex-direction: column; gap: 3px; font-size: 10px; padding: 6px 9px; white-space: normal; width: 76px; flex-shrink: 0; text-align: center; }
     .tab-btn.active { box-shadow: inset 0 -2px 0 var(--series-1); }
     .sidebar-footer { display: none; }
     main { padding: 18px 14px 50px; }
@@ -647,39 +650,39 @@
     <nav class="side-nav">
       <button class="tab-btn active" data-screen="dashboard" data-roles="boss" data-title="Fleet Overview">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
-        Director Dashboard
+        <span class="tab-label-full">Director Dashboard</span><span class="tab-label-short">Dashboard</span>
       </button>
       <button class="tab-btn" data-screen="operations" data-roles="manager" data-title="Manager Operations">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
-        Manager Operations
+        <span class="tab-label-full">Manager Operations</span><span class="tab-label-short">Manager</span>
       </button>
       <button class="tab-btn" data-screen="cash" data-roles="boss,manager" data-title="Cash">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="3"/><path d="M6 9v.01M18 15v.01"/></svg>
-        Cash
+        <span class="tab-label-full">Cash</span><span class="tab-label-short">Cash</span>
       </button>
       <button class="tab-btn" data-screen="inventory" data-roles="boss,manager" data-title="Inventory">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
-        Inventory
+        <span class="tab-label-full">Inventory</span><span class="tab-label-short">Inventory</span>
       </button>
       <button class="tab-btn" data-screen="fleet" data-roles="manager" data-title="Fleet & Drivers">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="7" width="15" height="11" rx="1.5"/><path d="M16 10h3.5l3.5 3.5V18h-7"/><circle cx="6" cy="19.5" r="1.8"/><circle cx="18" cy="19.5" r="1.8"/></svg>
-        Fleet & Drivers
+        <span class="tab-label-full">Fleet &amp; Drivers</span><span class="tab-label-short">Fleet</span>
       </button>
       <button class="tab-btn" data-screen="triplog" data-roles="boss,manager" data-title="Trip Log">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>
-        Trip Log
+        <span class="tab-label-full">Trip Log</span><span class="tab-label-short">Trip Log</span>
       </button>
       <button class="tab-btn" data-screen="reports" data-roles="boss" data-title="Reports">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><rect x="7" y="12" width="3" height="6"/><rect x="12.5" y="8" width="3" height="10"/><rect x="18" y="5" width="3" height="13"/></svg>
-        Reports
+        <span class="tab-label-full">Reports</span><span class="tab-label-short">Reports</span>
       </button>
       <button class="tab-btn" data-screen="roadmap" data-roles="boss,manager" data-title="Roadmap">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 21V4l4-1 8 2 4-1v13l-4 1-8-2-4 1Z"/><path d="M8 3v14M16 5v14"/></svg>
-        Roadmap
+        <span class="tab-label-full">Roadmap</span><span class="tab-label-short">Roadmap</span>
       </button>
       <button class="tab-btn" data-screen="settings" data-roles="boss" data-title="Settings">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/></svg>
-        Settings
+        <span class="tab-label-full">Settings</span><span class="tab-label-short">Settings</span>
       </button>
     </nav>
 
