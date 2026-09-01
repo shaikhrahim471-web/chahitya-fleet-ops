@@ -2728,7 +2728,7 @@
     }
     const today = todayStr();
     const { data, error } = await sb.from('cash_entries')
-      .select('id, type, category, amount, note, created_at, deleted_at, app_users(name)')
+      .select('id, type, category, amount, note, created_at, deleted_at, app_users!cash_entries_recorded_by_fkey(name)')
       .eq('entry_date', today).order('created_at', { ascending: false });
     if (error || !data) { tbody.innerHTML = '<tr><td colspan="7" style="color:var(--status-critical)">Could not load: ' + (error ? error.message : 'unknown error') + '</td></tr>'; return; }
 
