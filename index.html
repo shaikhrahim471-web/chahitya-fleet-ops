@@ -1278,7 +1278,19 @@
       return;
     }
     const owner = v.owners || { name: '— not on file —', owner_type: 'driver_owned', phone: '—', payment_account: '—' };
-    document.getElementById('modalVehIcon').textContent = v.registration_number.slice(-2);
+    const iconEl = document.getElementById('modalVehIcon');
+    iconEl.textContent = v.registration_number.slice(-2);
+    iconEl.style.backgroundImage = '';
+    sb.from('documents').select('file_path').eq('entity_type', 'vehicle').eq('entity_id', vehicleId).eq('doc_type', 'photo').maybeSingle().then(({ data: photoDoc }) => {
+      if (!photoDoc) return;
+      sb.storage.from('documents').createSignedUrl(photoDoc.file_path, 3600).then(({ data: signed }) => {
+        if (!signed) return;
+        iconEl.textContent = '';
+        iconEl.style.backgroundImage = 'url(' + signed.signedUrl + ')';
+        iconEl.style.backgroundSize = 'cover';
+        iconEl.style.backgroundPosition = 'center';
+      });
+    });
     document.getElementById('modalVeh').textContent = v.registration_number;
     const isDriverOwned = owner.owner_type !== 'third_party';
     document.getElementById('modalOwnerLine').innerHTML =
